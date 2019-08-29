@@ -32,6 +32,15 @@
  */
 
 /*
+ * To build the program and run tests:
+ * make
+ * mkdir -p bin build
+ * gcc build/transplant.o build/main.o -o bin/transplant
+ * gcc -Wall -Werror -std=gnu11 -g -DDEBUG -I include build/transplant.o tests/hw1_tests.c -lcriterion -o bin/transplant
+ *
+*/
+
+/*
  * A function that returns printable names for the record types, for use in
  * generating debugging printout.
  */
@@ -59,7 +68,7 @@ static char *record_type_name(int i) {
  * @details  This function copies its null-terminated argument string into
  * path_buf, including its terminating null byte.
  * The function fails if the argument string, including the terminating
- * null byte, is longer than the size of path_buf.  The path_length variable 
+ * null byte, is longer than the size of path_buf.  The path_length variable
  * is set to the length of the string in path_buf, not including the terminating
  * null byte.
  *
@@ -79,7 +88,7 @@ int path_init(char *name) {
  * The length of the new string, including the terminating null byte, must be
  * no more than the size of path_buf.  The variable path_length is updated to
  * remain consistent with the length of the string in path_buf.
- * 
+ *
  * @param  The string to be appended to the path in path_buf.  The string must
  * not contain any occurrences of the path separator character '/'.
  * @return 0 in case of success, -1 otherwise.
@@ -241,5 +250,17 @@ int deserialize() {
 int validargs(int argc, char **argv)
 {
     // To be implemented.
-    return -1;
+    printf("argc count: %d", argc);
+    if(argc < 2){
+        return -1;
+    }
+    printf("\n");
+    char *ptr;
+    ptr = *argv;
+    for (int i = 0; i < argc; i++){
+        printf("%s\n", *(argv)++);
+
+        ptr++;
+    }
+    return 0;
 }
