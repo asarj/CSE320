@@ -31,7 +31,7 @@
  * record is the total number of bytes comprising the record, including
  * the header bytes as well as any additional data after the header.
  */
- 
+
 #define HEADER_SIZE 16
 
 #define MAGIC0 0x0C

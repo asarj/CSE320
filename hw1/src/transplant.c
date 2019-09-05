@@ -1,6 +1,8 @@
 #include "const.h"
 #include "transplant.h"
 #include "debug.h"
+#include "helper.h"
+#include "stdlib.h"
 
 #ifdef _STRING_H
 #error "Do not #include <string.h>. You will get a ZERO."
@@ -247,20 +249,82 @@ int deserialize() {
  * @modifies global variable "global_options" to contain a bitmap representing
  * the selected options.
  */
-int validargs(int argc, char **argv)
-{
+int validargs(int argc, char **argv) {
     // To be implemented.
-    printf("argc count: %d", argc);
-    if(argc < 2){
+    global_options = 0;
+    if(argc < 2 || argc > 4){
         return -1;
     }
-    printf("\n");
-    char *ptr;
-    ptr = *argv;
-    for (int i = 0; i < argc; i++){
-        printf("%s\n", *(argv)++);
 
-        ptr++;
+    char *ptr;
+    /*FIRST DRAFT*/
+    // Check initial args, either -h or -s|-d
+    int validated = -1, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1,  dirValue = -1;
+    for (int i = 0; i < argc; i++){
+        ptr = *argv;
+        // printf("%s\n", ptr);
+        if(hFlag != 0){
+            hFlag = compareStrings(ptr, "-h");
+            if(hFlag == 0){
+                global_options |= 0x1;
+                return 0;
+            }
+        }
+        else if(sFlag != 0){
+            sFlag = compareStrings(ptr, "-s");
+            // Serialize the directory
+            if (sFlag == 0){
+                global_options |= 0x2;
+                return 0;
+            }
+        }
+        else if(dFlag != 0){
+            dFlag = compareStrings(ptr, "-d");
+            if (dFlag == 0){
+                global_options |= 0x4;
+                return 0;
+            }
+        }
+
+        if (hFlag == 0 || sFlag == 0 || dFlag == 0){
+            validated = 0;
+        }
+        argv++;
+    }
+    if(validated){
+        for(int i = 0; i < argc - 2; i++){
+
+        }
+    }
+    return validated;
+}
+
+int compareStrings(char *first, char *second){
+    char ptr1;
+    char ptr2;
+    ptr1 = *first;
+    ptr2 = *second;
+
+    while(ptr1 != 0 && ptr2 != 0){
+        if((ptr1 != ptr2)){
+            return -1;
+        }
+        ptr1 = *(first++);
+        ptr2 = *(second++);
+
     }
     return 0;
+}
+
+void int2Bin(int n){
+    while(n){
+        if (n & 1){
+            printf("1");
+        }
+        else{
+            printf("0");
+        }
+        n >>= 1;
+    }
+    printf("\n");
 }
