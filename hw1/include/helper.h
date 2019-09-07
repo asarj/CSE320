@@ -13,3 +13,4 @@
 */
 int compareStrings(char *first, char *second);
 void int2Bin(int n);
+int checkIfDir(char *dir);

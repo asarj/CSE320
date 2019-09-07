@@ -252,49 +252,102 @@ int deserialize() {
 int validargs(int argc, char **argv) {
     // To be implemented.
     global_options = 0;
-    if(argc < 2 || argc > 4){
-        return -1;
+    if(argc < 2 || *argv == NULL){
+        return EXIT_FAILURE;
     }
 
     char *ptr;
-    /*FIRST DRAFT*/
+    int i;
+    argv++;
+
     // Check initial args, either -h or -s|-d
-    int validated = -1, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1,  dirValue = -1;
-    for (int i = 0; i < argc; i++){
+    int validated = EXIT_FAILURE, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1;
+    // char* dirValue;
+    for (i = 1; i < argc; i++){
         ptr = *argv;
-        // printf("%s\n", ptr);
         if(hFlag != 0){
             hFlag = compareStrings(ptr, "-h");
             if(hFlag == 0){
                 global_options |= 0x1;
-                return 0;
+                USAGE(*(--argv), EXIT_SUCCESS);
+                return EXIT_SUCCESS;
             }
         }
-        else if(sFlag != 0){
+
+        if(sFlag != 0){
             sFlag = compareStrings(ptr, "-s");
             // Serialize the directory
             if (sFlag == 0){
                 global_options |= 0x2;
-                return 0;
+                break;
             }
         }
-        else if(dFlag != 0){
+
+        if(dFlag != 0){
             dFlag = compareStrings(ptr, "-d");
+            // De-serialize the directory
             if (dFlag == 0){
                 global_options |= 0x4;
-                return 0;
+                break;
             }
         }
-
-        if (hFlag == 0 || sFlag == 0 || dFlag == 0){
-            validated = 0;
-        }
-        argv++;
     }
-    if(validated){
-        for(int i = 0; i < argc - 2; i++){
 
+    if (sFlag == 0 || dFlag == 0){
+        validated = EXIT_SUCCESS;
+    }
+    else{
+        global_options = 0;
+        return -1;
+    }
+    argv++;
+    ptr = *argv;
+
+
+    if(i == argc || ptr == NULL){
+        return validated;
+    }
+    if(validated == EXIT_SUCCESS){
+        while(ptr != NULL){
+            if(cFlag != 0){
+                cFlag = compareStrings(ptr, "-c");
+                if(cFlag == 0){
+                    if(sFlag == 0){
+                        global_options = 0;
+                        return -1;
+                    }
+                    else{
+                        global_options |= 0x8;
+                    }
+                }
+            }
+
+            if(pFlag != 0){
+                pFlag = compareStrings(ptr, "-p");
+                if (pFlag == 0){
+                    argv++;
+                    ptr = *argv;
+                    if(ptr == NULL){
+                        return -1;
+                    }
+
+                    int dirFound = checkIfDir(ptr);
+
+                    if(dirFound == -1){
+                        global_options = 0;
+                        return -1;
+                    }
+                    else{
+                        // dirValue = ptr;
+                    }
+                }
+            }
+            argv++;
+            ptr = *argv;
         }
+    }
+    if (pFlag == -1){
+        // dirValue = "./";
     }
     return validated;
 }
@@ -314,6 +367,15 @@ int compareStrings(char *first, char *second){
 
     }
     return 0;
+}
+
+int checkIfDir(char *dir){
+    char ptr;
+    ptr = *dir;
+    if(ptr == 46 || ptr == 47){
+        return 0;
+    }
+    return -1;
 }
 
 void int2Bin(int n){
