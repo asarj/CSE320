@@ -253,7 +253,7 @@ int validargs(int argc, char **argv) {
     // To be implemented.
     global_options = 0;
     if(argc < 2 || *argv == NULL){
-        return EXIT_FAILURE;
+        return -1;
     }
 
     char *ptr;
@@ -269,8 +269,8 @@ int validargs(int argc, char **argv) {
             hFlag = compareStrings(ptr, "-h");
             if(hFlag == 0){
                 global_options |= 0x1;
-                USAGE(*(--argv), EXIT_SUCCESS);
-                return EXIT_SUCCESS;
+                USAGE(*(--argv), 0);
+                return 0;
             }
         }
 
@@ -294,7 +294,7 @@ int validargs(int argc, char **argv) {
     }
 
     if (sFlag == 0 || dFlag == 0){
-        validated = EXIT_SUCCESS;
+        validated = 0;
     }
     else{
         global_options = 0;
@@ -307,7 +307,7 @@ int validargs(int argc, char **argv) {
     if(i == argc || ptr == NULL){
         return validated;
     }
-    if(validated == EXIT_SUCCESS){
+    if(validated == 0){
         while(ptr != NULL){
             if(cFlag != 0){
                 cFlag = compareStrings(ptr, "-c");
