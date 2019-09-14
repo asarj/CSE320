@@ -24,7 +24,8 @@ int main(int argc, char **argv)
     debug("Options: 0x%x", global_options);
     if(global_options & 1)
         USAGE(*argv, EXIT_SUCCESS);
-
+    path_push("test");
+    path_pop(); path_pop(); path_pop();
     return EXIT_SUCCESS;
 }
 

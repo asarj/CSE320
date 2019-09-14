@@ -48,20 +48,20 @@
  */
 static char *record_type_name(int i) {
     switch(i) {
-    case START_OF_TRANSMISSION:
-	return "START_OF_TRANSMISSION";
-    case END_OF_TRANSMISSION:
-	return "END_OF_TRANSMISSION";
-    case START_OF_DIRECTORY:
-	return "START_OF_DIRECTORY";
-    case END_OF_DIRECTORY:
-	return "END_OF_DIRECTORY";
-    case DIRECTORY_ENTRY:
-	return "DIRECTORY_ENTRY";
-    case FILE_DATA:
-	return "FILE_DATA";
-    default:
-	return "UNKNOWN";
+        case START_OF_TRANSMISSION:
+            return "START_OF_TRANSMISSION";
+        case END_OF_TRANSMISSION:
+            return "END_OF_TRANSMISSION";
+        case START_OF_DIRECTORY:
+            return "START_OF_DIRECTORY";
+        case END_OF_DIRECTORY:
+            return "END_OF_DIRECTORY";
+        case DIRECTORY_ENTRY:
+            return "DIRECTORY_ENTRY";
+        case FILE_DATA:
+            return "FILE_DATA";
+        default:
+            return "UNKNOWN";
     }
 }
 
@@ -79,7 +79,18 @@ static char *record_type_name(int i) {
  */
 int path_init(char *name) {
     // To be implemented.
-    return -1;
+    // debug("%s", name);
+    path_length = stringLength(name);
+    // debug("%d", PATH_MAX);
+    if(path_length > PATH_MAX){
+        path_length = -1;
+        return -1;
+    }
+    path_length = path_length + 1;
+    char *ptr = name_buf;
+    manStrCpy(name, (char *) &name_buf);
+    // debug("%s", path_buf);
+    return 0;
 }
 
 /*
@@ -97,7 +108,33 @@ int path_init(char *name) {
  */
 int path_push(char *name) {
     // To be implemented.
-    return -1;
+    // debug("%s", name_buf);
+    if(*path_buf == '\0'){
+        manStrCpy(name_buf, (char *)&path_buf);
+    }
+    char *namePtr = name;
+    while (*namePtr != '\0'){
+        if(*namePtr == '/')
+            return -1;
+        namePtr++;
+    }
+
+    int nameLen = stringLength(name);
+    char *regPtr = path_buf;
+    for(int i = 0; i < path_length; i++){
+        if(*regPtr == '\0'){
+            char *slash = "/";
+            manStrCpy(slash, regPtr);
+            regPtr++;
+            manStrCpy(name, regPtr);
+            path_length += nameLen;
+            // printf("%s", path_buf);
+            break;
+        }
+        regPtr++;
+    }
+    // debug("%s", path_buf);
+    return 0;
 }
 
 /*
@@ -114,7 +151,38 @@ int path_push(char *name) {
  */
 int path_pop() {
     // To be implemented.
-    return -1;
+    // debug("%s", path_buf);
+    if(*path_buf == '\0'){
+        return -1;
+    }
+    int found = -1;
+    char *ptr = path_buf;
+    int lastSlash = 0;
+    int iter = 0;
+    while (*ptr != '\0'){
+        if(*ptr == '/'){
+            lastSlash = iter;
+            found = 0;
+        }
+        iter++;
+        ptr++;
+    }
+
+    if(found == -1){
+        *path_buf = '\0';
+    }
+    else{
+        char *replPtr = path_buf;
+        int i = 0;
+        while(i <= lastSlash){
+            replPtr++;
+            i++;
+        }
+        debug("%s", path_buf);
+        *replPtr = '\0';
+        debug("%s", path_buf);
+    }
+    return 0;
 }
 
 /*
@@ -261,8 +329,9 @@ int validargs(int argc, char **argv) {
     argv++;
 
     // Check initial args, either -h or -s|-d
-    int validated = EXIT_FAILURE, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1;
-    // char* dirValue;
+    int validated = -1, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1;
+    char* dirValue = "./";
+    // path_init(dirValue);
     for (i = 1; i < argc; i++){
         ptr = *argv;
         if(hFlag != 0){
@@ -305,6 +374,7 @@ int validargs(int argc, char **argv) {
 
 
     if(i == argc || ptr == NULL){
+        path_init(dirValue);
         return validated;
     }
     if(validated == 0){
@@ -338,7 +408,8 @@ int validargs(int argc, char **argv) {
                         return -1;
                     }
                     else{
-                        // dirValue = ptr;
+                        dirValue = ptr;
+
                     }
                 }
             }
@@ -346,9 +417,7 @@ int validargs(int argc, char **argv) {
             ptr = *argv;
         }
     }
-    if (pFlag == -1){
-        // dirValue = "./";
-    }
+    path_init(dirValue);
     return validated;
 }
 
@@ -389,4 +458,21 @@ void int2Bin(int n){
         n >>= 1;
     }
     printf("\n");
+}
+
+int stringLength(char *name){
+    int count = 0;
+
+    while(*(name) != '\0'){
+        count++;
+        name++;
+    }
+    return count;
+}
+void manStrCpy(char *source, char *dest){
+    while(*source != '\0'){
+        *dest++ = *source++;
+//        source++; dest++;
+    }
+    *dest = '\0';
 }

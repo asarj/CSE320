@@ -14,3 +14,5 @@
 int compareStrings(char *first, char *second);
 void int2Bin(int n);
 int checkIfDir(char *dir);
+int stringLength(char *str);
+void manStrCpy(char *source, char *dest);
