@@ -138,32 +138,33 @@ int path_push(char *name) {
     return 0;
 }
 
-int path_push_directory(char *name){
-    if(*path_buf == '\0') {
-        manStrCpy(name_buf, (char *) &path_buf);
-    }
-
-    int nameLen = stringLength(name);
-    char *regPtr = path_buf;
-    for(int i = 0; i < path_length; i++){
-        if(*regPtr == '\0'){
-            char *slash = "/";
-            manStrCpy(slash, regPtr);
-            regPtr++;
-            manStrCpy(name, regPtr);
-            regPtr++;
-            manStrCpy(slash, regPtr);
-            path_length += (nameLen + 1);
-
-            // debug("%s", path_buf);
-            break;
-        }
-        regPtr++;
-    }
-    // debug("%s", path_buf);
-    return 0;
-
-}
+//int path_push_directory(char *name){
+//    if(*path_buf == '\0') {
+//        manStrCpy(name_buf, (char *) &path_buf);
+//    }
+//
+//    int nameLen = stringLength(name);
+//    char *regPtr = path_buf;
+//    for(int i = 0; i < path_length; i++){
+//        if(*regPtr == '\0'){
+//            if(compareStrings("./", path_buf) != 0){}
+//            char *slash = "/";
+//            manStrCpy(slash, regPtr);
+//            regPtr++;
+//            manStrCpy(name, regPtr);
+//            regPtr++;
+//            manStrCpy(slash, regPtr);
+//            path_length += (nameLen + 1);
+//
+//            // debug("%s", path_buf);
+//            break;
+//        }
+//        regPtr++;
+//    }
+//    // debug("%s", path_buf);
+//    return 0;
+//
+//}
 
 /*
  * @brief  Remove the last component from the end of the pathname.
@@ -213,43 +214,43 @@ int path_pop() {
     return 0;
 }
 
-int path_pop_directory(){
-    if(*path_buf == '\0'){
-        return -1;
-    }
-    int found = -1;
-    char *ptr = path_buf;
-    int lastSlash = 0;
-    int secLastSlash = 0;
-    int iter = 0;
-    while (*ptr != '\0'){
-        if(*ptr == '/'){
-            if(lastSlash != 0){
-                secLastSlash = lastSlash;
-            }
-            lastSlash = iter;
-            found = 0;
-        }
-        iter++;
-        ptr++;
-    }
-
-    if(found == -1){
-        *path_buf = '\0';
-    }
-    else{
-        char *replPtr = path_buf;
-        int i = 0;
-        while(i <= secLastSlash){
-            replPtr++;
-            i++;
-        }
-//        debug("%s", path_buf);
-        *replPtr = '\0';
-//        debug("%s", path_buf);
-    }
-    return 0;
-}
+//int path_pop_directory(){
+//    if(*path_buf == '\0'){
+//        return -1;
+//    }
+//    int found = -1;
+//    char *ptr = path_buf;
+//    int lastSlash = 0;
+//    int secLastSlash = 0;
+//    int iter = 0;
+//    while (*ptr != '\0'){
+//        if(*ptr == '/'){
+//            if(lastSlash != 0){
+//                secLastSlash = lastSlash;
+//            }
+//            lastSlash = iter;
+//            found = 0;
+//        }
+//        iter++;
+//        ptr++;
+//    }
+//
+//    if(found == -1){
+//        *path_buf = '\0';
+//    }
+//    else{
+//        char *replPtr = path_buf;
+//        int i = 0;
+//        while(i <= secLastSlash){
+//            replPtr++;
+//            i++;
+//        }
+////        debug("%s", path_buf);
+//        *replPtr = '\0';
+////        debug("%s", path_buf);
+//    }
+//    return 0;
+//}
 
 /*
  * @brief Deserialize directory contents into an existing directory.
@@ -317,11 +318,11 @@ int serialize_directory(int depth) {
         return -1;
 
     struct dirent *de;
-    debug("Depth: %d", depth);
+//    debug("Depth: %d", depth);
     insert_header(DIRECTORY_ENTRY, depth, -1, NULL, NULL);
-    debug("%s\n", "Directory entry");
+//    debug("%s\n", "Directory entry");
     insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
-    debug("%s\n", "Start of directory");
+//    debug("%s\n", "Start of directory");
     while ((de = readdir(dir)) != NULL){
 
         struct stat stat_buf;
@@ -338,10 +339,10 @@ int serialize_directory(int depth) {
             if(compareStrings(de->d_name, "..") == 0 || compareStrings(de->d_name, ".") == 0){
                 continue;
             }
-            debug("path_buf: %s\n", path_buf);
+//            debug("path_buf: %s\n", path_buf);
             int isFile = S_ISREG(stat_buf.st_mode);
             if(isFile){
-                debug("Serializing file: %s in %s\n", de->d_name, path_buf);
+//                debug("Serializing file: %s in %s\n", de->d_name, path_buf);
                 ret = serialize_file(depth, stat_buf.st_size);
                 if(ret == -1){
                     return -1;
@@ -350,7 +351,7 @@ int serialize_directory(int depth) {
                 manStrCpy("\0", name_buf);
             }
             else if(S_ISDIR(stat_buf.st_mode)){
-                debug("Serializing Directory: %s in %s\n", de->d_name, path_buf);
+//                debug("Serializing Directory: %s in %s\n", de->d_name, path_buf);
                 ret = serialize_directory(depth);
                 if(ret == -1)
                     return -1;
@@ -363,7 +364,7 @@ int serialize_directory(int depth) {
         }
     }
     insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
-    debug("%s\n", "End of directory");
+//    debug("%s\n", "End of directory");
     return 0;
 }
 
@@ -405,7 +406,7 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
         for(int i = sizeof(depth) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &depth + i));
             char bit = *((char *) &depth + i);
-            debug("%o ", bit);
+//            debug("%o ", bit);
             putchar(bit);
         }
     }
@@ -417,23 +418,23 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
         for(int i = sizeof(t) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &x + i));
             char bit = *((char *) &t + i);
-            debug("%o ", bit);
+//            debug("%o ", bit);
             putchar(bit);
         }
-        debug("\n");
+//        debug("\n");
         if(st != -1){
 //            putchar(stat_buf.st_mode);
             for(int i = sizeof(stat_buf.st_mode) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &x + i));
                 char bit = *((char *) &stat_buf.st_mode + i);
-                debug("%o ", bit);
+//                debug("%o ", bit);
                 putchar(bit);
             }
 //            putchar(stat_buf.st_size);
             for(int i = sizeof(stat_buf.st_size) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &x + i));
                 char bit = *((char *) &stat_buf.st_size + i);
-                debug("%o ", bit);
+//                debug("%o ", bit);
                 putchar(bit);
             }
 //            for(int i = stringLength(name_buf) - 1; i >= 0; i--){
@@ -445,7 +446,7 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
             for(int i = 0; i < stringLength(name_buf); i++){
 //            debug("%04x ", *((char *) &x + i));
                 char bit = *((char *) &name_buf + i);
-                debug("%o ", bit);
+//                debug("%o ", bit);
                 putchar(bit);
             }
         }
@@ -458,10 +459,10 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
         for(int i = sizeof(t) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &x + i));
             char bit = *((char *) &t + i);
-            debug("%o ", bit);
+//            debug("%o ", bit);
             putchar(bit);
         }
-        debug("\n");
+//        debug("\n");
         char c = fgetc(f);
         while (c != EOF){
             putchar(c);
@@ -478,7 +479,7 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
                     debug("%o ", bit);
                     putchar(bit);
                 }
-                debug("\n");
+//                debug("\n");
             }
             else {
                 return -1;
@@ -489,10 +490,10 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
             for(int i = sizeof(x) - 1; i >= 0; i--){
 //            debug("%04x ", *((char *) &x + i));
                 char bit = *((char *) &x + i);
-                debug("%d ", bit);
+//                debug("%d ", bit);
                 putchar(bit);
             }
-            debug("\n");
+//            debug("\n");
         }
     }
     return 0;
@@ -520,10 +521,10 @@ int serialize() {
     if(dir == NULL)
         return -1;
     insert_header(START_OF_TRANSMISSION, depth, -1, NULL, NULL);
-    debug("%s\n", "Start of transmission");
+//    debug("%s\n", "Start of transmission");
     insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
-    debug("%s\n", "Start of directory");
-    debug("Depth: %d", depth);
+//    debug("%s\n", "Start of directory");
+//    debug("Depth: %d", depth);
     while ((de = readdir(dir)) != NULL){
 
         struct stat stat_buf;
@@ -540,10 +541,10 @@ int serialize() {
             if(compareStrings(de->d_name, "..") == 0 || compareStrings(de->d_name, ".") == 0){
                 continue;
             }
-            debug("path_buf: %s\n", path_buf);
+//            debug("path_buf: %s\n", path_buf);
             int isFile = S_ISREG(stat_buf.st_mode);
             if(isFile){
-                debug("Serializing file: %s in %s\n", de->d_name, path_buf);
+//                debug("Serializing file: %s in %s\n", de->d_name, path_buf);
                 ret = serialize_file(depth, stat_buf.st_size);
 
                 if(ret == -1){
@@ -552,7 +553,7 @@ int serialize() {
                 path_pop();
             }
             else if(S_ISDIR(stat_buf.st_mode)){
-                debug("Serializing directory: %s in %s\n", de->d_name, path_buf);
+//                debug("Serializing directory: %s in %s\n", de->d_name, path_buf);
                 ret = serialize_directory(depth);
                 if(ret == -1) {
                     return -1;
@@ -565,9 +566,9 @@ int serialize() {
         }
     }
     insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
-    debug("%s\n", "End of directory");
+//    debug("%s\n", "End of directory");
     insert_header(END_OF_TRANSMISSION, 0, -1, NULL, NULL);
-    debug("%s\n", "End of transmission");
+//    debug("%s\n", "End of transmission");
     closedir(dir);
     return 0;
 }
@@ -678,8 +679,7 @@ int validargs(int argc, char **argv) {
 
     // Check initial args, either -h or -s|-d
     int validated = -1, hFlag = -1, sFlag = -1, dFlag = -1, pFlag = -1, cFlag = -1;
-    char* dirValue = "./";
-    // path_init(dirValue);
+    char* dirValue = ".";
     for (i = 1; i < argc; i++){
         ptr = *argv;
         if(hFlag != 0){
@@ -748,16 +748,16 @@ int validargs(int argc, char **argv) {
                         return -1;
                     }
 
-//                    int dirFound = checkIfDir(ptr);
+                    int argFound = checkIfArg(ptr);
 
-//                    if(dirFound == -1){
-//                        global_options = 0;
-//                        return -1;
-//                    }
-//                    else{
+                    if(argFound == -1){
+                        global_options = 0;
+                        return -1;
+                    }
+                    else{
                         dirValue = ptr;
 
-//                    }
+                    }
                 }
             }
             argv++;
@@ -800,4 +800,11 @@ void manStrCpy(char *source, char *dest){
 //        source++; dest++;
     }
     *dest = '\0';
+}
+
+int checkIfArg(char *arg){
+    if(*arg == '-')
+        return -1;
+    else
+        return 0;
 }
