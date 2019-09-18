@@ -1,11 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <limits.h>
-#include <time.h>
-#include <utime.h>
-#include <dirent.h>
-#include <sys/stat.h>
-
 #include "const.h"
 
 /**
@@ -16,3 +8,7 @@ void int2Bin(int n);
 int checkIfDir(char *dir);
 int stringLength(char *str);
 void manStrCpy(char *source, char *dest);
+int path_push_directory(char *name);
+int path_pop_directory();
+void serialize_helper(int depth);
+int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir);

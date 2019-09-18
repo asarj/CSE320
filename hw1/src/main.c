@@ -24,8 +24,26 @@ int main(int argc, char **argv)
     debug("Options: 0x%x", global_options);
     if(global_options & 1)
         USAGE(*argv, EXIT_SUCCESS);
-    path_push("test");
-    path_pop(); path_pop(); path_pop();
+
+    // Serialize or deserialize
+    if(global_options & 2){
+        ret = serialize();
+        if(ret == -1){
+            return EXIT_FAILURE;
+        }
+    }
+    else if(global_options & 4){
+        if(global_options & 8){
+            // clobber code here
+        }
+        else{
+            ret = deserialize();
+            if(ret == -1){
+                return EXIT_FAILURE;
+            }
+        }
+    }
+    fflush(stdout);
     return EXIT_SUCCESS;
 }
 
