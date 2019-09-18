@@ -129,6 +129,8 @@ int path_push(char *name) {
             regPtr++;
             manStrCpy(name, regPtr);
             path_length += nameLen;
+            if(path_length > PATH_MAX)
+                return -1;
             // debug("%s", path_buf);
             break;
         }
@@ -312,22 +314,28 @@ int deserialize_file(int depth);
  */
 int serialize_directory(int depth) {
     // To be implemented.
-    int st = -1, ret;
+    int st = -1, ret, ins = -1;
     DIR *dir = opendir(path_buf);
     if (dir == NULL)
         return -1;
 
     struct dirent *de;
 //    debug("Depth: %d", depth);
-    insert_header(DIRECTORY_ENTRY, depth, -1, NULL, NULL);
+    ins = insert_header(DIRECTORY_ENTRY, depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "Directory entry");
-    insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
+    ins = insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "Start of directory");
     while ((de = readdir(dir)) != NULL){
 
         struct stat stat_buf;
         if(!(compareStrings(de->d_name, "..") == 0 || compareStrings(de->d_name, ".") == 0)){
-            path_push(de->d_name);
+            int pp = path_push(de->d_name);
+            if(pp == -1)
+                return -1;
             manStrCpy(de->d_name, name_buf);
             st = stat(path_buf, &stat_buf);
         }
@@ -347,7 +355,9 @@ int serialize_directory(int depth) {
                 if(ret == -1){
                     return -1;
                 }
-                path_pop();
+                int ppo = path_pop();
+                if(ppo == -1)
+                    return -1;
                 manStrCpy("\0", name_buf);
             }
             else if(S_ISDIR(stat_buf.st_mode)){
@@ -355,7 +365,9 @@ int serialize_directory(int depth) {
                 ret = serialize_directory(depth);
                 if(ret == -1)
                     return -1;
-                path_pop();
+                int ppo = path_pop();
+                if(ppo == -1)
+                    return -1;
                 manStrCpy("\0", name_buf);
             }
             else{
@@ -363,8 +375,11 @@ int serialize_directory(int depth) {
             }
         }
     }
-    insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
+    ins = insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "End of directory");
+    closedir(dir);
     return 0;
 }
 
@@ -383,13 +398,18 @@ int serialize_directory(int depth) {
  */
 int serialize_file(int depth, off_t size) {
     // To be implemented.
+    int ins = -1;
     FILE *f = fopen(path_buf, "r");
     if(f == NULL){
         fclose(f);
         return -1;
     }
-    insert_header(DIRECTORY_ENTRY, depth, -1, f, NULL);
-    insert_header(FILE_DATA, depth, size, f, NULL);
+    ins = insert_header(DIRECTORY_ENTRY, depth, -1, f, NULL);
+    if(ins == -1)
+        return -1;
+    ins = insert_header(FILE_DATA, depth, size, f, NULL);
+    if(ins == -1)
+        return -1;
     return 0;
 }
 
@@ -514,22 +534,28 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
  */
 int serialize() {
     // To be implemented.
-    int ret, st = -1;
+    int ret, st = -1, ins = -1;
     DIR *dir = opendir(path_buf);
     int depth = 0;
     struct dirent *de;
     if(dir == NULL)
         return -1;
-    insert_header(START_OF_TRANSMISSION, depth, -1, NULL, NULL);
+    ins = insert_header(START_OF_TRANSMISSION, depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "Start of transmission");
-    insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
+    ins = insert_header(START_OF_DIRECTORY, ++depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "Start of directory");
 //    debug("Depth: %d", depth);
     while ((de = readdir(dir)) != NULL){
 
         struct stat stat_buf;
         if(!(compareStrings(de->d_name, "..") == 0 || compareStrings(de->d_name, ".") == 0)){
-            path_push(de->d_name);
+            int pp = path_push(de->d_name);
+            if(pp == -1)
+                return -1;
             manStrCpy(de->d_name, name_buf);
             st = stat(path_buf, &stat_buf); // gives mode and size_t
         }
@@ -550,7 +576,9 @@ int serialize() {
                 if(ret == -1){
                     return -1;
                 }
-                path_pop();
+                int ppo = path_pop();
+                if(ppo == -1)
+                    return -1;
             }
             else if(S_ISDIR(stat_buf.st_mode)){
 //                debug("Serializing directory: %s in %s\n", de->d_name, path_buf);
@@ -558,16 +586,22 @@ int serialize() {
                 if(ret == -1) {
                     return -1;
                 }
-                path_pop();
+                int ppo = path_pop();
+                if(ppo == -1)
+                    return -1;
             }
             else{
                 continue;
             }
         }
     }
-    insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
+    ins = insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "End of directory");
-    insert_header(END_OF_TRANSMISSION, 0, -1, NULL, NULL);
+    ins = insert_header(END_OF_TRANSMISSION, 0, -1, NULL, NULL);
+    if(ins == -1)
+        return -1;
 //    debug("%s\n", "End of transmission");
     closedir(dir);
     return 0;
