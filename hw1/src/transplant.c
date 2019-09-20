@@ -791,6 +791,13 @@ int deserialize_file(int depth){
     //     else
     //         fclose(file);
     // }
+    struct stat st;
+    int result = stat(name_buf, &st);
+    if(result == 0){
+        if(!(global_options & 8)){
+            return -1;
+        }
+    }
 
     FILE *f = fopen(path_buf, "w");
     if(f == NULL){
