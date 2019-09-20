@@ -33,14 +33,9 @@ int main(int argc, char **argv)
         }
     }
     else if(global_options & 4){
-        if(global_options & 8){
-            // clobber code here
-        }
-        else{
-            ret = deserialize();
-            if(ret == -1){
-                return EXIT_FAILURE;
-            }
+        ret = deserialize();
+        if(ret == -1){
+            return EXIT_FAILURE;
         }
     }
     fflush(stdout);

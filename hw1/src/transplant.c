@@ -254,46 +254,7 @@ int path_pop() {
 //    return 0;
 //}
 
-/*
- * @brief Deserialize directory contents into an existing directory.
- * @details  This function assumes that path_buf contains the name of an existing
- * directory.  It reads (from the standard input) a sequence of DIRECTORY_ENTRY
- * records bracketed by a START_OF_DIRECTORY and END_OF_DIRECTORY record at the
- * same depth and it recreates the entries, leaving the deserialized files and
- * directories within the directory named by path_buf.
- *
- * @param depth  The value of the depth field that is expected to be found in
- * each of the records processed.
- * @return 0 in case of success, -1 in case of an error.  A variety of errors
- * can occur, including depth fields in the records read that do not match the
- * expected value, the records to be processed to not being with START_OF_DIRECTORY
- * or end with END_OF_DIRECTORY, or an I/O error occurs either while reading
- * the records from the standard input or in creating deserialized files and
- * directories.
- */
-int deserialize_directory(int depth) {
-    // To be implemented.
-    return -1;
-}
-
-/*
- * @brief Deserialize the contents of a single file.
- * @details  This function assumes that path_buf contains the name of a file
- * to be deserialized.  The file must not already exist, unless the ``clobber''
- * bit is set in the global_options variable.  It reads (from the standard input)
- * a single FILE_DATA record containing the file content and it recreates the file
- * from the content.
- *
- * @param depth  The value of the depth field that is expected to be found in
- * the FILE_DATA record.
- * @return 0 in case of success, -1 in case of an error.  A variety of errors
- * can occur, including a depth field in the FILE_DATA record that does not match
- * the expected value, the record read is not a FILE_DATA record, the file to
- * be created already exists, or an I/O error occurs either while reading
- * the FILE_DATA record from the standard input or while re-creating the
- * deserialized file.
- */
-int deserialize_file(int depth);
+// insert deserialize functions back here
 
 /*
  * @brief  Serialize the contents of a directory as a sequence of records written
@@ -379,7 +340,9 @@ int serialize_directory(int depth) {
     if(ins == -1)
         return -1;
 //    debug("%s\n", "End of directory");
-    closedir(dir);
+    int cl = closedir(dir);
+    if(cl == -1)
+        return -1;
     return 0;
 }
 
@@ -483,12 +446,16 @@ int insert_header(int type, int depth, off_t size, FILE *f, DIR *dir){
             putchar(bit);
         }
 //        debug("\n");
+        int counter = 0;
         char c = fgetc(f);
         while (c != EOF){
             putchar(c);
+            counter++;
             c = fgetc(f);
         }
         fclose(f);
+        if(counter != stat_buf.st_size)
+            return -1;
     }
     else{
         if(size != -1){
@@ -603,68 +570,11 @@ int serialize() {
     if(ins == -1)
         return -1;
 //    debug("%s\n", "End of transmission");
-    closedir(dir);
+    int cl = closedir(dir);
+    if(cl == -1)
+        return -1;
     return 0;
 }
-
-//void serialize_helper(int depth){
-//    int st = -1, ret;
-//    DIR *d = opendir(path_buf);
-//    struct dirent *de;
-//    if(d == NULL){
-//        return;
-//    }
-//    else{
-//        insert_header(START_OF_DIRECTORY, depth, -1, NULL, NULL);
-//        while ((de = readdir(d)) != NULL){
-//            debug("%s\n", de->d_name);
-//            struct stat stat_buf;
-//            if(!(compareStrings(de->d_name, "..") == 0 || compareStrings(de->d_name, ".") == 0)){
-//                path_push(de->d_name);
-//                debug("path_buf: %s\n", path_buf);
-//                st = stat(path_buf, &stat_buf);
-//            }
-//
-//            if(st == -1){
-//                continue;
-//            }
-//            else{
-//                if(compareStrings(de->d_name, "..") == 0){
-//                    continue;
-//                }
-//                else if(compareStrings(de->d_name, ".") == 0){
-////            serialize_directory(++depth);
-//                }
-//
-//                int isFile = S_ISREG(stat_buf.st_mode);
-//                if(isFile){
-//                    debug("%s\n", de->d_name);
-//                    ret = serialize_file(depth, stat_buf.st_size);
-//                    if(ret == -1){
-//
-//                    }
-//                    path_pop();
-//                    debug("path_buf: %s\n", path_buf);
-//                }
-//                else if(S_ISDIR(stat_buf.st_mode)){
-//                    debug("%s\n", de->d_name);
-//
-//                    ret = serialize_directory(++depth);
-//                    if(ret == -1){
-//
-//                    }
-////                    serialize_helper(depth);
-//                    path_pop();
-//                }
-//                else{
-////                debug("%s\n", "This is neither");
-//                    continue;
-//                }
-//            }
-//        }
-//        insert_header(END_OF_DIRECTORY, depth, -1, NULL, NULL);
-//    }
-//}
 
 /**
  * @brief Reads serialized data from the standard input and reconstructs from it
@@ -681,7 +591,197 @@ int serialize() {
  */
 int deserialize() {
     // To be implemented.
+//    info("Deserializing...");
+
+    int ret = -1;
+
+    ret = check_header_data(START_OF_TRANSMISSION);
+    if(ret == -1)
+        return -1;
+    // info("Found magic");
+    int t = get_type();
+    if(t < 0 || t > FILE_DATA)
+        return -1;
+    // debug("%d", t);
+    int d = get_depth();
+    // debug("%d", d);
+    long s = get_size();
+    if(s != 16)
+        return -1;
+        // debug("%ld", s);
+    else{
+        ret = deserialize_directory(0);
+        if(ret == -1)
+            return -1;
+        else {
+            ret = check_header_data(END_OF_TRANSMISSION);
+            if (ret == -1)
+                return -1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * @brief Deserialize directory contents into an existing directory.
+ * @details  This function assumes that path_buf contains the name of an existing
+ * directory.  It reads (from the standard input) a sequence of DIRECTORY_ENTRY
+ * records bracketed by a START_OF_DIRECTORY and END_OF_DIRECTORY record at the
+ * same depth and it recreates the entries, leaving the deserialized files and
+ * directories within the directory named by path_buf.
+ *
+ * @param depth  The value of the depth field that is expected to be found in
+ * each of the records processed.
+ * @return 0 in case of success, -1 in case of an error.  A variety of errors
+ * can occur, including depth fields in the records read that do not match the
+ * expected value, the records to be processed to not being with START_OF_DIRECTORY
+ * or end with END_OF_DIRECTORY, or an I/O error occurs either while reading
+ * the records from the standard input or in creating deserialized files and
+ * directories.
+ */
+int deserialize_directory(int depth) {
+    // To be implemented.
+    int ret = check_header_data();
+    debug("%d\n", ret);
+    if(ret == -1)
+        return -1;
+    int type = get_type();
+    debug("%d\n", type);
+    int d = get_depth();
+    debug("%d\n", d);
+    long size = get_size();
+    debug("%ld\n", size);
+
+    if(type == DIRECTORY_ENTRY){
+        mode_t perm = get_st_mode();
+        off_t st_size = get_st_size();
+        int filename_len = size - st_size - perm;
+        debug("%d\n", filename_len);
+        char *filename = get_filename(filename_len);
+    }
+    else if(type == START_OF_DIRECTORY){
+        ret = deserialize_directory(++depth);
+        if(ret == -1)
+            return -1;
+    }
+    else if(type == FILE_DATA){
+        ret = deserialize_file(depth);
+        if(ret == -1)
+            return -1;
+    }
+    else if(type == END_OF_DIRECTORY){
+        ret = deserialize_directory(depth);
+        if(ret == -1)
+            return -1;
+    }
+    else{
+        return -1;
+    }
+    return 0;
+}
+
+/*
+ * @brief Deserialize the contents of a single file.
+ * @details  This function assumes that path_buf contains the name of a file
+ * to be deserialized.  The file must not already exist, unless the ``clobber''
+ * bit is set in the global_options variable.  It reads (from the standard input)
+ * a single FILE_DATA record containing the file content and it recreates the file
+ * from the content.
+ *
+ * @param depth  The value of the depth field that is expected to be found in
+ * the FILE_DATA record.
+ * @return 0 in case of success, -1 in case of an error.  A variety of errors
+ * can occur, including a depth field in the FILE_DATA record that does not match
+ * the expected value, the record read is not a FILE_DATA record, the file to
+ * be created already exists, or an I/O error occurs either while reading
+ * the FILE_DATA record from the standard input or while re-creating the
+ * deserialized file.
+ */
+int deserialize_file(int depth){
     return -1;
+}
+
+int check_header_data(){
+    int depth = 0, ret = -1;
+    long size = 0;
+    int c = (int)getchar();
+    // info("Current char: %d", c);
+    int c2 = (int)getchar();
+    // info("Current char: %d", c2);
+    int c3 = (int)getchar();
+    // info("Current char: %d", c3);
+    if(c == MAGIC0 && c2 == MAGIC1 && c3 == MAGIC2){
+        return 0;
+    }
+    return -1;
+}
+
+mode_t get_st_mode(){
+    mode_t m = (((mode_t)getchar() << 24) |
+                ((mode_t)getchar() << 16) |
+                ((mode_t)getchar() << 8) |
+                ((mode_t)getchar() << 0));
+    // info("%d", m);
+    return m;
+}
+
+off_t get_st_size(){
+    off_t m = (((off_t)getchar() << 56) |
+               ((off_t)getchar() << 48) |
+               ((off_t)getchar() << 40) |
+               ((off_t)getchar() << 32) |
+               ((off_t)getchar() << 24) |
+               ((off_t)getchar() << 16) |
+               ((off_t)getchar() << 8) |
+               ((off_t)getchar() << 0));
+    // info("%ld", m);
+    return m;
+}
+
+int get_depth(){
+    int m = (((int)getchar() << 24) |
+             ((int)getchar() << 16) |
+             ((int)getchar() << 8) |
+             ((int)getchar() << 0));
+    // info("%d", m);
+    return m;
+}
+
+long get_size(){
+    long m = (((long)getchar() << 56) |
+              ((long)getchar() << 48) |
+              ((long)getchar() << 40) |
+              ((long)getchar() << 32) |
+              ((long)getchar() << 24) |
+              ((long)getchar() << 16) |
+              ((long)getchar() << 8) |
+              ((long)getchar() << 0));
+    // info("%ld", m);
+    return m;
+}
+
+int get_type(){
+    int m = (int)getchar();
+    // info("%d", m);
+    return m;
+}
+
+char * get_filename(int len){
+    char *ptr = name_buf;
+    int i = 0;
+    while(i < len){
+        *ptr++ = getchar();
+        i++;
+    }
+    *ptr = '\0';
+//    for(int i = 0; i < stringLength(name_buf); i++){
+////            debug("%04x ", *((char *) &x + i));
+//        char bit = *((char *) &name_buf + i);
+////                debug("%o ", bit);
+//        putchar(bit);
+//    }
+    info("%s", ptr);
+    return ptr;
 }
 
 /**
