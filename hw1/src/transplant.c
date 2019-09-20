@@ -613,11 +613,11 @@ int deserialize() {
         ret = deserialize_directory(0);
         if(ret == -1)
             return -1;
-        else {
-            ret = check_header_data(END_OF_TRANSMISSION);
-            if (ret == -1)
-                return -1;
-        }
+        // else {
+        //     ret = check_header_data(END_OF_TRANSMISSION);
+        //     if (ret == -1)
+        //         return -1;
+        // }
     }
     return 0;
 }
@@ -641,9 +641,11 @@ int deserialize() {
  */
 int deserialize_directory(int depth) {
     // To be implemented.
+    info("Starting deserialize directory");
     int ret = check_header_data();
-    debug("%d\n", ret);
+    debug("%s\n", path_buf);
     if(ret == -1)
+        // info("Invalid header data");
         return -1;
     int type = get_type();
     debug("%d\n", type);
@@ -653,30 +655,87 @@ int deserialize_directory(int depth) {
     debug("%ld\n", size);
 
     if(type == DIRECTORY_ENTRY){
+        info("Dir entry");
         mode_t perm = get_st_mode();
         off_t st_size = get_st_size();
-        int filename_len = size - st_size - perm;
+        int filename_len = size - 16 - 12;
         debug("%d\n", filename_len);
         char *filename = get_filename(filename_len);
+        debug("%s\n", filename);
+        int ppu = path_push(filename);
+        debug("%s", path_buf);
+        if(ppu == -1)
+            return -1;
+        if(S_ISDIR(perm)){
+            info("Deserializing directory");
+
+            int mk = mkdir(path_buf, 0700);
+            debug("%d", mk);
+            if(mk == -1)
+                return -1;
+            info("Made dir");
+            ret = deserialize_directory(depth);
+            if(ret == -1){
+                // info("Something wrong happened");
+                return 0;
+            }
+
+            info("Successful dir");
+            chmod(path_buf, perm & 0777);
+            // ret = deserialize_directory(depth);
+            // if(ret == -1)
+            //     return -1;
+            int ppo = path_pop();
+            if(ppo == -1)
+                return -1;
+            // ret = deserialize_directory(depth);
+            // if(ret == -1)
+            //     return -1;
+
+        }
+        else if(S_ISREG(perm)){
+            info("Serializing File");
+            ret = deserialize_file(depth);
+            if(ret == -1)
+                return -1;
+            ret = deserialize_directory(depth);
+            if(ret == -1)
+                return -1;
+            }
+            int ppo = path_pop();
+            if(ppo == -1)
+                return -1;
+        else{
+            return -1;
+        }
     }
     else if(type == START_OF_DIRECTORY){
+
         ret = deserialize_directory(++depth);
         if(ret == -1)
             return -1;
     }
     else if(type == FILE_DATA){
+
         ret = deserialize_file(depth);
         if(ret == -1)
             return -1;
+        // ret = deserialize_directory(depth);
+        // if(ret == -1)
+        //     return -1;
     }
     else if(type == END_OF_DIRECTORY){
         ret = deserialize_directory(depth);
         if(ret == -1)
             return -1;
+        // ret = path_pop();
+        // if(ret == -1)
+        //     return -1;
     }
-    else{
-        return -1;
+    else if(type == END_OF_TRANSMISSION){
+        return 0;
     }
+
     return 0;
 }
 
@@ -698,7 +757,37 @@ int deserialize_directory(int depth) {
  * deserialized file.
  */
 int deserialize_file(int depth){
-    return -1;
+    int ret = check_header_data();
+    if(ret == -1)
+        return -1;
+    info("Checked header data");
+    int type = get_type();
+    debug("%d", type);
+    int d = get_depth();
+    if(depth != d)
+        return -1;
+    debug("%d", depth);
+    long size = get_size();
+    debug("%ld", size);
+    FILE *f = fopen(path_buf, "w");
+    if(f == NULL){
+        info("File could not be created");
+        return -1;
+    }
+
+    info("Opened file");
+    int num_bytes = size - 16;
+    debug("%d", num_bytes);
+    int i = 0;
+    while(i < num_bytes){
+        fputc(getchar(), f);
+        i++;
+    }
+    fclose(f);
+    int pp = path_pop();
+    if(pp == -1)
+        return -1;
+    return 0;
 }
 
 int check_header_data(){
@@ -767,21 +856,23 @@ int get_type(){
 }
 
 char * get_filename(int len){
-    char *ptr = name_buf;
+    // info("len = %d", len);
     int i = 0;
+    char *ptr = name_buf;
     while(i < len){
-        *ptr++ = getchar();
+        *(ptr + i) = getchar();
         i++;
     }
-    *ptr = '\0';
 //    for(int i = 0; i < stringLength(name_buf); i++){
 ////            debug("%04x ", *((char *) &x + i));
 //        char bit = *((char *) &name_buf + i);
 ////                debug("%o ", bit);
 //        putchar(bit);
 //    }
-    info("%s", ptr);
-    return ptr;
+    // info("%s", name_buf);
+    // fprintf(stderr, "%s\n", name_buf);
+    *(ptr + i) = '\0';
+    return name_buf;
 }
 
 /**
@@ -898,6 +989,7 @@ int validargs(int argc, char **argv) {
             ptr = *argv;
         }
     }
+    // if(global_options & 2)
     path_init(dirValue);
     return validated;
 }
