@@ -610,6 +610,10 @@ int deserialize() {
         return -1;
         // debug("%ld", s);
     else{
+        DIR *dir = opendir(path_buf);
+        if(dir == NULL){
+            mkdir(path_buf, 0700);
+        }
         ret = deserialize_directory(0);
         if(ret == -1)
             return -1;
@@ -668,7 +672,15 @@ int deserialize_directory(int depth) {
             return -1;
         if(S_ISDIR(perm)){
             info("Deserializing directory");
+            // DIR *dir = opendir(path_buf);
+            // if(dir == NULL){
+            //     if(global_options & 8){
 
+            //     }
+            //     else{
+            //         return -1;
+            //     }
+            // }
             int mk = mkdir(path_buf, 0700);
             debug("%d", mk);
             if(mk == -1)
@@ -769,6 +781,17 @@ int deserialize_file(int depth){
     debug("%d", depth);
     long size = get_size();
     debug("%ld", size);
+
+    // FILE *file;
+    // if((file = fopen(path_buf, "r"))){
+    //     if(!(global_options & 8)){
+    //         fclose(file);
+    //         return -1;
+    //     }
+    //     else
+    //         fclose(file);
+    // }
+
     FILE *f = fopen(path_buf, "w");
     if(f == NULL){
         info("File could not be created");

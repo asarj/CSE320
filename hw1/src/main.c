@@ -37,6 +37,7 @@ int main(int argc, char **argv)
         if(ret == -1){
             return EXIT_FAILURE;
         }
+
     }
     fflush(stdout);
     return EXIT_SUCCESS;
