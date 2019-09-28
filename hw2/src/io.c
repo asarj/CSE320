@@ -4,12 +4,12 @@
 #include <sys/file.h>
 #include <ctype.h>
 
-#include "sys5.h"
+#include "toolsdir/sys5.h"
 
 #ifdef TMC
-#include <ctools.h>
+#include <toolsdir/ctools.h>
 #else
-#include "ctools.h"
+#include "toolsdir/ctools.h"
 #endif
 
 #include "datadef.h"
@@ -17,10 +17,10 @@
 
 
 char *Field_Names[N_BASIC_FIELDS] = {
-        
+
         "Name: ", "Work Phone: ", "Home Phone: ", "Company: ",
         "Work Address: ", "Home Address: ", "Remarks: ", "Date Updated: "
-        
+
      };
 
 Ptr_Rolo_List Begin_Rlist = 0;
@@ -29,8 +29,40 @@ Ptr_Rolo_List Current_Entry = 0;
 
 static char *rolofiledata;
 
-read_rolodex (fd) int fd;
+write_rolo_list (fp) FILE *fp
 
+/* write the entire in-core rolodex to a file */
+
+{
+
+    Ptr_Rolo_List rptr;
+    Ptr_Rolo_Entry entry;
+    int j;
+
+    rptr = Begin_Rlist;
+
+    while (rptr != 0) {
+        entry = get_entry(rptr);
+        for (j = 0; j < N_BASIC_FIELDS; j++) {
+            fprintf(fp,"%s\n",get_basic_rolo_field(j,entry));
+        }
+        for (j = 0; j < get_n_others(entry); j++) {
+            fprintf(fp,"%s\n",get_other_field(j,entry));
+        }
+        fprintf(fp,"\n");
+        rptr = get_next_link(rptr);
+    }
+
+}
+
+
+write_rolo (fp1,fp2) FILE *fp1; FILE *fp2;
+{
+    write_rolo_list(fp1);
+    write_rolo_list(fp2);
+}
+
+read_rolodex (fd) int fd
 {
   struct stat statdata;
   int filesize,i,j,k,start_of_others,warning_given;
@@ -39,35 +71,35 @@ read_rolodex (fd) int fd;
   char *next_field,*next_other,*oldname,*currentname;
   char **other_pointers;
   int n_entries = 0;
-  
+
   /* find out how many bytes are in the file */
-  
+
   fstat(fd,&statdata);
   if ((filesize = statdata.st_size) == 0) {
      return(0);
   }
 
   /* create an array of characters that big */
-  
+
   rolofiledata = rolo_emalloc(filesize);
 
   /* read them all in at once for efficiency */
-  
+
   if (filesize != read(fd,rolofiledata,filesize)) {
      fprintf(stderr,"rolodex read failed\n");
      exit(-1);
   }
 
   j = 0;
-  
+
   /* for each entry in the rolodex file */
-  
+
   while (j < filesize) {
 
       n_entries++;
-        
+
       /* create the link and space for the data entry */
-        
+
       newlink = new_link_with_entry();
       newentry = get_entry(newlink);
       if (j == 0) {
@@ -143,7 +175,7 @@ read_rolodex (fd) int fd;
   }
 
   /* check that all the entries are in alphabetical order by name */
-  
+
   warning_given = 0;
   rptr = get_next_link(Begin_Rlist);
   while (rptr != 0) {
@@ -153,57 +185,21 @@ read_rolodex (fd) int fd;
        reorder_file = 1;
     }
     rptr = get_next_link(rptr);
-  }    
-    
-  return(n_entries);
-  
-}
-
-
-write_rolo_list (fp) FILE *fp; 
-
-/* write the entire in-core rolodex to a file */
-
-{
-
-  Ptr_Rolo_List rptr;
-  Ptr_Rolo_Entry entry;
-  int j;
-
-  rptr = Begin_Rlist;
-
-  while (rptr != 0) {
-    entry = get_entry(rptr);
-    for (j = 0; j < N_BASIC_FIELDS; j++) {
-        fprintf(fp,"%s\n",get_basic_rolo_field(j,entry));
-    }
-    for (j = 0; j < get_n_others(entry); j++) {
-        fprintf(fp,"%s\n",get_other_field(j,entry));
-    }
-    fprintf(fp,"\n");
-    rptr = get_next_link(rptr);
   }
 
+  return(n_entries);
+
 }
-
-
-write_rolo (fp1,fp2) FILE *fp1; FILE *fp2;
-
-{
-  write_rolo_list(fp1);
-  write_rolo_list(fp2);
-}
-
 
 display_basic_field (name,value,show,up) char *name; char *value; int show,up;
 {
-  int semi = 0;        
+  int semi = 0;
   int i;
   if (all_whitespace(value) && !show) return;
   printf("%-25s",name);
   while (*value != '\0') {
     if (*value == ';') {
-       while (*++value == ' '); 
+       while (*++value == ' ');
        putchar('\n');
        for (i = 0; i < (up ? 28 : 25); i++) putchar(' ');
        semi = 1;
@@ -219,7 +215,7 @@ display_basic_field (name,value,show,up) char *name; char *value; int show,up;
 
 display_other_field (fieldstring) char *fieldstring;
 {
-  int already_put_sep = 0;        
+  int already_put_sep = 0;
   int count = 0;
   int i;
   while (*fieldstring != '\0') {
@@ -258,7 +254,7 @@ summarize_entry_list (rlist,ss) Ptr_Rolo_List rlist; char *ss;
           get_basic_rolo_field((int) R_NAME,get_entry(rlist))
        );
     }
-    rlist = get_next_link(rlist);    
+    rlist = get_next_link(rlist);
   }
   putchar('\n');
 }
@@ -272,34 +268,34 @@ display_field_names ()
   int j;
   char *name;
   clear_the_screen();
-  for (j = 0; j < N_BASIC_FIELDS - 1; j++) {        
-      name = Field_Names[j];        
+  for (j = 0; j < N_BASIC_FIELDS - 1; j++) {
+      name = Field_Names[j];
       printf("%d. ",j+1);
       while (*name != ':') putchar(*name++);
       putchar('\n');
   }
   printf("%d. ",N_BASIC_FIELDS);
   printf("A user created item name\n\n");
-}  
-  
+}
+
 
 display_entry (entry) Ptr_Rolo_Entry entry;
 
 {
   int j,n_others;
   char *string;
-  
+
   clear_the_screen();
-  
+
   /* display the standard fields other than Date Updated */
-  
+
   for (j = 0; j < N_BASIC_FIELDS - 1; j++) {
       string = get_basic_rolo_field(j,entry);
       display_basic_field(Field_Names[j],string,0,0);
-  }        
-      
+  }
+
   /* display any additional fields the user has defined for this entry */
-  
+
   n_others = get_n_others(entry);
   for (j = 0; j < n_others; j++) {
       string = get_other_field(j,entry);
@@ -307,7 +303,7 @@ display_entry (entry) Ptr_Rolo_Entry entry;
    }
 
    /* display the Date Updated field */
-   
+
    j = N_BASIC_FIELDS - 1;
    display_basic_field(Field_Names[j],get_basic_rolo_field(j,entry),0,0);
    fprintf(stdout,"\n");
@@ -324,22 +320,22 @@ display_entry_for_update (entry) Ptr_Rolo_Entry entry;
   int j,n_others;
   char *string;
   int count = 1;
-  
+
   clear_the_screen();
-  
+
   for (j = 0; j < N_BASIC_FIELDS - 1; j++) {
       string = get_basic_rolo_field(j,entry);
       printf("%d. ",count++);
       display_basic_field(Field_Names[j],string,1,1);
-  }        
-      
+  }
+
   n_others = get_n_others(entry);
   for (j = 0; j < n_others; j++) {
       string = get_other_field(j,entry);
       printf("%d. ",count++);
       display_other_field(string);
   }
-  
+
   printf("%d. Add a new user defined field\n",count);
 
   fprintf(stdout,"\n");
@@ -347,18 +343,18 @@ display_entry_for_update (entry) Ptr_Rolo_Entry entry;
 }
 
 
-int cathelpfile (filepath,helptopic,clear) 
+void cathelpfile (filepath,helptopic,clear)
 
-  char *filepath, *helptopic; 
+  char *filepath, *helptopic;
   int clear;
 
 {
-  FILE *fp;          
+  FILE *fp;
   char buffer[MAXLINELEN];
   if (clear) clear_the_screen();
   if (NULL == (fp = fopen(filepath,"r"))) {
      if (helptopic) {
-        printf("No help available on %s, sorry.\n\n",helptopic); 
+        printf("No help available on %s, sorry.\n\n",helptopic);
      }
      else {
         fprintf(stderr,"Fatal error, can't open %s\n",filepath);
@@ -366,7 +362,7 @@ int cathelpfile (filepath,helptopic,clear)
      }
      return;
   }
-  while (NULL != fgets(buffer,MAXLINELEN,fp)) printf("%s",buffer);  
+  while (NULL != fgets(buffer,MAXLINELEN,fp)) printf("%s",buffer);
   printf("\n");
   fclose(fp);
   return;
