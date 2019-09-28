@@ -67,7 +67,7 @@ extern int reorder_file;
 extern int rololocked;
 
 extern char *rolo_emalloc();
-extern char *malloc();
+//extern char *malloc(); // MADE CHANGE HERE - removed function
 extern Ptr_Rolo_List new_link_with_entry();
 extern char *copystr();
 extern int compare_links();
