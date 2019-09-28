@@ -4,6 +4,8 @@
 #endif
 #undef putchar
 
+#include "helper.h" // MADE CHANGE HERE - added import statement
+
 int putchar();
 static int ok_to_clear;
 
@@ -12,10 +14,10 @@ static char clear_screen[128] = 0;
 static int lines;
 #endif
 
-clearinit ()
+void clearinit () // MADE CHANGE HERE - added return identifier
 {
 #ifdef TERMINFO
-  int i;        
+  int i;
   setupterm(getenv("TERM"),1,&i);
   ok_to_clear = (i == 1) ? 1 : 0;
   if (i != 1) {
@@ -36,12 +38,12 @@ clearinit ()
   ok_to_clear = (clear_screen[0] != 0 && lines > 0);
 
 #endif
-}        
-        
-clear_the_screen ()
+}
+
+void clear_the_screen () // MADE CHANGE HERE - added return identifier
 {
 #ifdef TERMINFO
-  if (!ok_to_clear) return;        
+  if (!ok_to_clear) return;
   tputs(clear_screen,lines,putchar);
   fflush(stdout);
 #endif

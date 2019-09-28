@@ -1,0 +1,11 @@
+//int save_and_exit();
+void write_rolo(FILE* fp1, FILE* fp2);
+int cathelpfile (char *filepath, char *helptopic, int clear);
+void clearinit();
+void clear_the_screen();
+void read_rolodex(int fd);
+int rlength(Ptr_Rolo_List rlist);
+void rolo_reorder();
+void print_short();
+void print_people();
+void interactive_rolo();

@@ -7,4 +7,4 @@
 
 /* This is now defined in the Makefile */
 
-/*  #define ROLOLIB "/usr/local/lib/rolo"  */
+// #define ROLOLIB "/usr/local/lib/rolo" // MADE CHANGE HERE - uncommented define statement
