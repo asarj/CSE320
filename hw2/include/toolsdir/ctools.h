@@ -259,7 +259,7 @@ extern int read_yes_or_no (); // MADE CHANGE HERE - added return type
   /* eventually returned. */
 
 
-//extern int getline (); // MADE CHANGE HERE - removed function
+extern int get_line(); // MADE CHANGE HERE - edited function name and in update.c, menu.c, ctools.c
 
   /* FILE *iport; char *buffer; int buflen; */
 

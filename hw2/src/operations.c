@@ -1,31 +1,32 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include "sys5.h"
+#include "toolsdir/sys5.h" // MADE CHANGE HERE - added missing import statement
 
 #ifdef TMC
-#include <ctools.h>
+#include <toolsdir/ctools.h> // MADE CHANGE HERE - added missing import statement
 #else
-#include "ctools.h"
+#include "toolsdir/ctools.h" // MADE CHANGE HERE - added missing import statement
 #endif
-#include "args.h"
-#include "menu.h"
-#include "mem.h"
+#include "toolsdir/args.h" // MADE CHANGE HERE - added missing import statement
+#include "toolsdir/menu.h" // MADE CHANGE HERE - added missing import statement
+#include "toolsdir/mem.h" // MADE CHANGE HERE - added missing import statement
 
 
 #include "rolofiles.h"
 #include "rolodefs.h"
 #include "datadef.h"
 #include "choices.h"
+#include "helper.h" // MADE CHANGE HERE - added missing import statement
 
 extern char *ctime();
 
 Ptr_Rolo_List create_entry (basicdata,otherdata) char **basicdata, **otherdata;
 {
-  Ptr_Rolo_List newlink;        
+  Ptr_Rolo_List newlink;
   Ptr_Rolo_Entry newentry;
   int i,j;
-  newlink = new_link_with_entry();        
+  newlink = new_link_with_entry();
   newentry = get_entry(newlink);
   for (j = 0; j < N_BASIC_FIELDS; j++) {
       set_basic_rolo_field(j,newentry,basicdata[j]);
@@ -41,12 +42,12 @@ Ptr_Rolo_List create_entry (basicdata,otherdata) char **basicdata, **otherdata;
   }
   else newentry -> other_fields = 0;
   return(newlink);
-}  
-  
+}
 
-other_fields () 
+
+other_fields ()
 {
-  int rval;        
+  int rval;
   rval = rolo_menu_yes_no (
              "Additional fields? ",DEFAULT_NO,1,
              "morefieldshelp","additional fields"
@@ -64,7 +65,7 @@ add_the_entry ()
 }
 
 
-rolo_add () 
+rolo_add ()
 
 {
   int i,j,k,rval,menuval;
@@ -72,22 +73,22 @@ rolo_add ()
   char *response;
   char *basicdata[N_BASIC_FIELDS], *otherdata[100], *datum;
   Ptr_Rolo_List rlink;
-        
+
   for (j = 0; j < 100; j++) otherdata[j] = 0;
   for (j = 0; j < N_BASIC_FIELDS; j++) basicdata[j] = 0;
   cathelpfile(libdir("addinfo"),0,1);
-  
+
   /* 'k' and 'kludge' are are kludge to allow us to back up from entering */
   /* user defined fields to go an correct wrong basic field information. */
-  
+
   k = 0;
-  
+
   kludge :
-  
+
   for (j = k; j < N_BASIC_FIELDS - 1; j++) {
-        
+
       redo :
-        
+
       rval = menu_match (
            &menuval,&response,
            Field_Names[j],
@@ -98,9 +99,9 @@ rolo_add ()
            "?",A_HELP,
            "",A_NO_DATA
         );
-        
+
       switch (rval) {
-        
+
         case MENU_NO_MATCH :
           basicdata[j] = copystr(response);
           if (j == 0 && strlen(basicdata[j]) == 0) {
@@ -149,7 +150,7 @@ rolo_add ()
         case MENU_EOF :
           user_eof();
           break;
-          
+
         case MENU_ERROR :
         case MENU_AMBIGUOUS :
         default :
@@ -198,7 +199,7 @@ rolo_add ()
                  cathelpfile(libdir("otherformathelp"),"user-item format",1);
                  any_char_to_continue();
                  goto redo_other;
-              }   
+              }
              break;
            case MENU_NO_MATCH :
              if (0 == index(response,':')) {
@@ -219,10 +220,10 @@ rolo_add ()
      }
   }
 
-  add_entry :   
+  add_entry :
 
   basicdata[N_BASIC_FIELDS - 1] = timestring();
-  
+
   rlink = create_entry(basicdata,otherdata);
   clear_the_screen();
   display_entry(get_entry(rlink));
@@ -248,12 +249,12 @@ entry_action (rlink) Ptr_Rolo_List rlink;
   static entry_menu_displayed = 0;
   int rval,menuval;
   char *response;
-  
+
   if (!entry_menu_displayed) cathelpfile(libdir("entrymenu"),0,0);
   entry_menu_displayed = 1;
-  
+
   redo :
-  
+
   rval = menu_match (
        &menuval, &response,
        "Action (? for help) : ",
@@ -266,7 +267,7 @@ entry_action (rlink) Ptr_Rolo_List rlink;
        "<",E_PREV,
        "%",E_SCAN
     );
-    
+
   if (rval != MENU_MATCH) {
      if (rval == MENU_EOF) user_eof();
      fprintf(stderr,"Impossible return from entry_action menu_match\n");
@@ -307,7 +308,7 @@ entry_action (rlink) Ptr_Rolo_List rlink;
   }
 
   return(menuval);
-  
+
 }
 
 
@@ -315,15 +316,15 @@ display_list_of_entries (rlist) Ptr_Rolo_List rlist;
 
 {
   Ptr_Rolo_List old;
-        
-  while (rlist != 0) {        
-    
+
+  while (rlist != 0) {
+
     if (!get_matched(rlist)) goto next;
-        
-    loop :    
-    
+
+    loop :
+
     display_entry(get_entry(rlist));
-    
+
     switch (entry_action(rlist)) {
       case E_CONTINUE :
         break;
@@ -349,18 +350,18 @@ display_list_of_entries (rlist) Ptr_Rolo_List rlist;
         sleep(1);
         break;
     }
-    
+
     next :
-    
+
     rlist = get_next_link(rlist);
-    
+
   }
-  
+
   printf("No further entries to scan...\n");
-  sleep(2);     
-  
+  sleep(2);
+
 }
-  
+
 
 rolo_peruse_mode (first_rlink) Ptr_Rolo_List first_rlink;
 
@@ -372,14 +373,14 @@ rolo_peruse_mode (first_rlink) Ptr_Rolo_List first_rlink;
      sleep(2);
      return;
   }
-  while (rlist != 0) {  
+  while (rlist != 0) {
     set_matched(rlist);
     rlist = get_next_link(rlist);
-  }    
+  }
   display_list_of_entries(first_rlink);
   rlist = first_rlink;
-  while (rlist != 0) {  
+  while (rlist != 0) {
     unset_matched(rlist);
     rlist = get_next_link(rlist);
-  }    
+  }
 }
