@@ -1,21 +1,24 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <string.h>
 
-#include "sys5.h"
+#include "toolsdir/sys5.h"
 
 #ifdef TMC
-#include <ctools.h>
+#include <toolsdir/ctools.h>
 #else
-#include "ctools.h"
+#include "toolsdir/ctools.h"
 #endif
-#include "args.h"
-#include "menu.h"
-#include "mem.h"
+#include "toolsdir/args.h"
+#include "toolsdir/menu.h"
+#include "toolsdir/mem.h"
 
 #include "rolofiles.h"
 #include "rolodefs.h"
 #include "datadef.h"
 #include "choices.h"
+#include "helper.h"
 
 
 char *get_new_value ()
@@ -70,7 +73,7 @@ Ptr_Rolo_Entry copy_entry (entry) Ptr_Rolo_Entry entry;
 }
 
 
-rolo_update_mode (rlink) Ptr_Rolo_List rlink;
+void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
 
 /* Update the fields of an entry.  The user is not allowed to modify the */
 /* timestamp field. */

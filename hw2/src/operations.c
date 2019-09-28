@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h> // MADE CHANGE HERE - added missing import statement
+#include <unistd.h> // MADE CHANGE HERE - added missing import statement
 
 #include "toolsdir/sys5.h" // MADE CHANGE HERE - added missing import statement
 
@@ -45,7 +47,7 @@ Ptr_Rolo_List create_entry (basicdata,otherdata) char **basicdata, **otherdata;
 }
 
 
-other_fields ()
+int other_fields ()
 {
   int rval;
   rval = rolo_menu_yes_no (
@@ -56,7 +58,7 @@ other_fields ()
 }
 
 
-add_the_entry ()
+int add_the_entry ()
 {
   return(MENU_YES == rolo_menu_yes_no (
               "Add new entry to rolodex? ",DEFAULT_YES,1,
@@ -65,13 +67,13 @@ add_the_entry ()
 }
 
 
-rolo_add ()
+void rolo_add ()
 
 {
   int i,j,k,rval,menuval;
-  long timeval;
+//  long timeval;
   char *response;
-  char *basicdata[N_BASIC_FIELDS], *otherdata[100], *datum;
+  char *basicdata[N_BASIC_FIELDS], *otherdata[100]; //, *datum;
   Ptr_Rolo_List rlink;
 
   for (j = 0; j < 100; j++) otherdata[j] = 0;
@@ -243,10 +245,10 @@ rolo_add ()
 }
 
 
-entry_action (rlink) Ptr_Rolo_List rlink;
+int entry_action (rlink) Ptr_Rolo_List rlink;
 
 {
-  static entry_menu_displayed = 0;
+  static int entry_menu_displayed = 0;
   int rval,menuval;
   char *response;
 
@@ -312,7 +314,7 @@ entry_action (rlink) Ptr_Rolo_List rlink;
 }
 
 
-display_list_of_entries (rlist) Ptr_Rolo_List rlist;
+void display_list_of_entries (rlist) Ptr_Rolo_List rlist;
 
 {
   Ptr_Rolo_List old;
@@ -363,10 +365,10 @@ display_list_of_entries (rlist) Ptr_Rolo_List rlist;
 }
 
 
-rolo_peruse_mode (first_rlink) Ptr_Rolo_List first_rlink;
+void rolo_peruse_mode (first_rlink) Ptr_Rolo_List first_rlink;
 
 {
-  int rval;
+  // int rval;
   Ptr_Rolo_List rlist = first_rlink;
   if (0 == Begin_Rlist) {
      fprintf(stderr,"No further entries in rolodex...\n");

@@ -1,3 +1,5 @@
+#include <string.h>
+#include "toolsdir/ctools.h"
 #include "datadef.h"
 #include "helper.h"
 
@@ -21,7 +23,7 @@ Ptr_Rolo_List new_link_with_entry ()
 }
 
 
-rolo_insert (link,compare) Ptr_Rolo_List link; int (*compare)();
+void rolo_insert (link,compare) Ptr_Rolo_List link; int (*compare)();
 
 {
   Ptr_Rolo_List rptr;
@@ -62,7 +64,7 @@ rolo_insert (link,compare) Ptr_Rolo_List link; int (*compare)();
 }
 
 
-rolo_delete (link) Ptr_Rolo_List link;
+void rolo_delete (link) Ptr_Rolo_List link;
 
 {
   if (get_next_link(link) == 0 && get_prev_link(link) == 0) {
@@ -90,7 +92,7 @@ rolo_delete (link) Ptr_Rolo_List link;
 }
 
 
-compare_links (l1,l2) Ptr_Rolo_List l1,l2;
+int compare_links (l1,l2) Ptr_Rolo_List l1,l2;
 
 {
   Ptr_Rolo_Entry e1,e2;
