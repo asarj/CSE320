@@ -11,10 +11,10 @@ typedef enum Basic_Field {
     R_NAME = 0, R_WORK_PHONE, R_HOME_PHONE, R_COMPANY, R_WORK_ADDRESS,
     R_HOME_ADDRESS, R_REMARKS, R_UPDATED
 
-  };    
-    
-extern char *Field_Names[];  
-  
+  } Basic_Field; // MADE CHANGE HERE - added struct name
+
+extern char *Field_Names[];
+
 /* A Rolodex entry */
 
 typedef struct {
@@ -25,11 +25,11 @@ typedef struct {
 
   } Rolo_Entry, *Ptr_Rolo_Entry;
 
-  
+
 #define get_basic_rolo_field(n,x) (((x) -> basicfields)[(n)])
-#define get_n_others(x) ((x) -> n_others)  
+#define get_n_others(x) ((x) -> n_others)
 #define get_other_field(n,x) (((x) -> other_fields)[n])
-  
+
 #define set_basic_rolo_field(n,x,s) (((x) -> basicfields[(n)]) = (s))
 #define set_n_others(x,n) (((x) -> n_others) = (n))
 #define incr_n_others(x) (((x) -> n_others)++)
