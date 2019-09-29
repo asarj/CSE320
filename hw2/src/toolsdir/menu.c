@@ -1,17 +1,23 @@
 #include <stdio.h>
-#include <varargs.h>
-#include "ctools.h"
-#include "menu.h"
-#include "sys5.h"
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+#ifdef TMC
+#include <toolsdir/ctools.h>
+#else
+#include "toolsdir/ctools.h"
+#endif
+#include "toolsdir/menu.h"
+#include "toolsdir/sys5.h"
 
 
 static char line[MAX_MENU_RESPONSE_LENGTH];
 
 
-menu_match (
+int menu_match (
 
      ptr_rval,ptr_ur,prompt,casetest,isub,r_no_match,r_ambiguous,n_options,
-     va_alist
+     current
 
    )
 
@@ -23,14 +29,14 @@ menu_match (
   int r_no_match;
   int r_ambiguous;
   int n_options;
-  va_dcl
+  char *current; // MADE CHANGE HERE - changed variable to conform to stdargs
 
 {
 
   char sline[MAX_MENU_RESPONSE_LENGTH];
-  char *option, *options[MAX_MENU_OPTIONS];
+  char /* *option, */ *options[MAX_MENU_OPTIONS];
   int rvals[MAX_MENU_OPTIONS];
-  int j,found,*addr,len,optionlen,rval,compare,blankindex;
+  int j,found,/* *addr, */len,optionlen,rval,compare,blankindex;
   va_list pvar;
 
   if (n_options > MAX_MENU_OPTIONS) return(MENU_ERROR);
@@ -39,7 +45,7 @@ menu_match (
   /* grab all the menu options and return values.  */
 
   blankindex = -1;
-  va_start(pvar);
+  va_start(pvar, current); // MADE CHANGE HERE - added current as second argument
   for (j = 0; j < n_options; j++) {
       options[j] = va_arg(pvar,char *);
       if (0 == strlen(options[j])) {
@@ -152,7 +158,7 @@ menu_match (
 }
 
 
-menu_yes_no (prompt,allow_help) char *prompt; int allow_help;
+int menu_yes_no (prompt,allow_help) char *prompt; int allow_help;
 
 {
   int menuval,rval;
@@ -229,7 +235,7 @@ extern int menu_data_help_or_abort (prompt,abortstring,ptr_response)
 }
 
 
-menu_number_help_or_abort (prompt,abortstring,low,high,ptr_ival)
+int menu_number_help_or_abort (prompt,abortstring,low,high,ptr_ival)
 
   char *prompt, *abortstring;
   int low,high,*ptr_ival;
@@ -269,7 +275,7 @@ menu_number_help_or_abort (prompt,abortstring,low,high,ptr_ival)
 }
 
 
-menu_yes_no_abort_or_help (prompt,abortstring,helpallowed,return_for_yes)
+int menu_yes_no_abort_or_help (prompt,abortstring,helpallowed,return_for_yes)
 
 /*
     Returns one of MENU_YES, MENU_NO, MENU_ABORT or MENU_HELP.

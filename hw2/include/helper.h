@@ -1,7 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-
 void save_and_exit();
 void write_rolo (FILE *fp1, FILE *fp2);
 void cathelpfile (char *filepath, char *helptopic, int clear);
@@ -22,3 +21,6 @@ void rolo_peruse_mode (Ptr_Rolo_List first_rlink);
 void rolo_update_mode (Ptr_Rolo_List rlink);
 void rolo_delete (Ptr_Rolo_List link);
 void display_entry_for_update (Ptr_Rolo_Entry entry);
+int rolo_menu_data_help_or_abort (char *prompt, char *helpfile, char *subject, char **ptr_response);
+void display_field_names ();
+int rolo_menu_number_help_or_abort (char *prompt, int low, int high, int *ptr_ival);
