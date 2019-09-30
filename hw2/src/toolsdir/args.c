@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
-#include "basics.h"
-#include "args.h"        
-#include "sys5.h"
+#include "toolsdir/basics.h"
+#include "toolsdir/args.h"
+#include "toolsdir/sys5.h"
 
 /***************************************************************************/
 /***************************************************************************/
@@ -53,10 +55,10 @@ int option_to_index (achar) char achar;
 }
 
 char index_to_option (index) int index;
-{        
+{
   if (index < 26) return('A' + index);
   return('a' + index - 26);
-}  
+}
 
 
 /* the command line arguments are parsed into Cmd when get_args returns */
@@ -65,7 +67,7 @@ char index_to_option (index) int index;
 static Ptr_Cmd_Line Cmd = NIL;
 
 int get_args (argc, argv, dup_error, print_msg)
-        
+
   /* Returns one of NO_ARGS, ARG_ERROR, or ARGS_PRESENT */
 
   int argc;
@@ -85,11 +87,11 @@ int get_args (argc, argv, dup_error, print_msg)
 
   i = 0;
   dash_index = NO_OPTION;
-  
+
   while (++i < argc) {
-        
+
         /* parse arguments (i.e., anything not beginning with '-' */
-        
+
         if (argv[i][0] != '-') {
                 arg = (Ptr_Cmd_Arg) malloc(sizeof(Cmd_Arg));
                 arg -> option = argv[i];
@@ -98,7 +100,7 @@ int get_args (argc, argv, dup_error, print_msg)
                 if (last == NIL) {
                         Cmd -> non_dash_arg_list = arg;
                         last = arg;
-                }                
+                }
                 else {
                         last -> next = arg;
                         last = arg;
@@ -107,11 +109,11 @@ int get_args (argc, argv, dup_error, print_msg)
         }
 
         /* parse options. '-' by itself is illegal syntax */
-        
+
         if (strlen(argv[i]) < 2) {
                 echar = '-';
                 goto parse_error;
-        }        
+        }
         optr = argv[i];
         optr++;
         while (*optr != '\0') {
@@ -141,11 +143,11 @@ int get_args (argc, argv, dup_error, print_msg)
   if (print_msg) fprintf(stderr,"duplicate option: %c\n",echar);
   return(ARG_ERROR);
 
-}  
+}
 
 
 Bool option_present (achar) char achar;
-{        
+{
   return((Cmd -> dash_options)[option_to_index(achar)]);
 }
 
@@ -155,19 +157,19 @@ Bool any_option_present ()
   int j;
   for (j = 0; j < MAX_OPTIONS; j++) {
       if ((Cmd -> dash_options)[j]) return(T);
-  }      
+  }
   return(F);
-}  
+}
 
-  
+
 char * get_option_arg (i,n) int i; int n;
 
   /* get the nth option associated with the option whose index is 'i' */
-        
+
 {
   int count;
-  Ptr_Cmd_Arg args;        
-  args = Cmd -> non_dash_arg_list;  
+  Ptr_Cmd_Arg args;
+  args = Cmd -> non_dash_arg_list;
   count = 0;
   while (args != NIL) {
         if (i == args -> option_index && ++count == n) {
@@ -176,7 +178,7 @@ char * get_option_arg (i,n) int i; int n;
         args = args -> next;
   }
   return(NIL);
-}  
+}
 
 
 char * option_arg (achar,n) char achar; int n;
@@ -188,7 +190,7 @@ char * option_arg (achar,n) char achar; int n;
 char * non_option_arg (n) int n;
 {
   return(get_option_arg(NO_OPTION,n));
-}  
+}
 
 
 char * non_dash_arg (n) int n;
@@ -204,7 +206,7 @@ char * non_dash_arg (n) int n;
   return(NIL);
 }
 
-print_args ()
+void print_args ()
 
   /* debugging routine which prints out the Cmd structure in readable form */
 
@@ -215,8 +217,8 @@ print_args ()
   if (Cmd == NIL) {
         printf("\n\nNo arguments\n\n");
         return;
-  }        
-  
+  }
+
   printf("\n\narguments not associated with options: ");
   n = 1;
   while (T) {
@@ -242,7 +244,7 @@ print_args ()
 
   printf("\nnumber of non-dashed args is: %d\n",n_non_dash_args());
   printf("number of non-option args is  : %d\n",n_non_option_args());
-  
+
 }
 
 
@@ -257,7 +259,7 @@ int arg_counter (type) int type;
 {
   int index,count;
   Ptr_Cmd_Arg arg;
-  arg = Cmd -> non_dash_arg_list;        
+  arg = Cmd -> non_dash_arg_list;
   count = 0;
   index = (type == NON_OPTION) ? NO_OPTION : type;
   while (arg != NIL) {
@@ -271,7 +273,7 @@ int arg_counter (type) int type;
 }
 
 int n_option_args (achar) char achar;
-{        
+{
   return(arg_counter(option_to_index(achar)));
 }
 
@@ -286,13 +288,13 @@ int n_non_dash_args ()
 }
 
 
-set_option (achar) char achar;
+void set_option (achar) char achar; // MADE CHANGE HERE - changed return type
 {
   (Cmd -> dash_options)[option_to_index(achar)] = T;
 }
 
 
-error_message (progname, argv, i, usage)
+void error_message (progname, argv, i, usage) // MADE CHANGE HERE - changed return type
         char *progname; char ** argv; int i; char *usage;
 {
   fprintf(stderr,"\nillegal argument to %s : %s\n",progname,argv[i]);

@@ -1,4 +1,5 @@
 /* You must include "basics.h" to use this */
+include "basics.h"
 
 /* To use this package, first call get_args, then call the various other */
 /* routines to see which options were given, etc. */
@@ -83,14 +84,14 @@ extern char legal_options();
         /* in the legaloptions string, otherwise returns the first option */
         /* character not in the string. */
 
-extern int set_option(); // MADE CHANGE HERE - added return type
+extern void set_option(); // MADE CHANGE HERE - added return type
 
         /* char achar */
 
-extern int error_message(); // MADE CHANGE HERE - added return type
+extern void error_message(); // MADE CHANGE HERE - added return type
 
         /* char *progname; char **argv; int index; char *usage; */
 
-extern int print_args(); // MADE CHANGE HERE - added return type
+extern void print_args(); // MADE CHANGE HERE - added return type
 
         /* debugging routine */
