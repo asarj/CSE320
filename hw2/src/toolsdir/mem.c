@@ -11,8 +11,9 @@
 /* Author: JP Massar */
 
 #include <stdio.h>
-
-#include "sys5.h"
+#include <stdlib.h>
+#include <string.h>
+#include "toolsdir/sys5.h"
 
 #ifdef BSD42
 #include <strings.h>
@@ -25,7 +26,7 @@ static char *ptr_next_byte;             /* next free byte */
 static char *ptr_space;                 /* current block */
 static int chunk_size;                  /* size of block last allocated */
 
-extern char *malloc();
+// extern char *malloc(); // MADE CHANGE HERE - removed duplicate function
 
 
 int allocate_memory_chunk (space) int space;
@@ -33,7 +34,7 @@ int allocate_memory_chunk (space) int space;
 /* malloc up a new block of memory.  Set our static variables */
 /* returns NO_MORE_MEMORY if can't allocate block. */
 
-{ 
+{
   if (0 == (ptr_space = malloc(space))) {
         fprintf(stderr,"fatal error, no more memory\n");
         return(NO_MORE_MEMORY);
@@ -52,12 +53,12 @@ char * get_memory_chunk (size) int size;
 /* returns 0 if no more memory. */
 
 { char *rval;
-        
+
   if (size > chunk_size) {
         fprintf(stderr,"attempt to allocate too large a chunk\n");
         return(0);
   }
-        
+
   if (size > bytes_left) {
         if (NO_MORE_MEMORY == allocate_memory_chunk(chunk_size)) {
                 return(0);
@@ -69,7 +70,7 @@ char * get_memory_chunk (size) int size;
   ptr_next_byte += size;
   bytes_left -= size;
   return(rval);
-  
+
 }
 
 
