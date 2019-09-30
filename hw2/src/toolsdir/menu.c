@@ -16,20 +16,19 @@ static char line[MAX_MENU_RESPONSE_LENGTH];
 
 int menu_match (
 
-     ptr_rval,ptr_ur,prompt,casetest,isub,r_no_match,r_ambiguous,n_options,
-     current
+     int *ptr_rval,
+  char **ptr_ur,
+  char *prompt,
+  int casetest,
+  int isub,
+  int r_no_match,
+  int r_ambiguous,
+  int n_options,
+  ...
 
    )
-
-  int *ptr_rval;
-  char **ptr_ur;
-  char *prompt;
-  int casetest;
-  int isub;
-  int r_no_match;
-  int r_ambiguous;
-  int n_options;
-  char *current; // MADE CHANGE HERE - changed variable to conform to stdargs
+  // va_dcl;
+  // char *current; // MADE CHANGE HERE - changed variable to conform to stdargs
 
 {
 
@@ -45,7 +44,7 @@ int menu_match (
   /* grab all the menu options and return values.  */
 
   blankindex = -1;
-  va_start(pvar, current); // MADE CHANGE HERE - added current as second argument
+  va_start(pvar, n_options);
   for (j = 0; j < n_options; j++) {
       options[j] = va_arg(pvar,char *);
       if (0 == strlen(options[j])) {
@@ -270,6 +269,8 @@ int menu_number_help_or_abort (prompt,abortstring,low,high,ptr_ival)
           return(MENU_DATA);
           break;
       }
+      default:
+      goto reask;
   }
 
 }

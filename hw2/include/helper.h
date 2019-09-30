@@ -1,5 +1,8 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifndef DATADEF_H
+#define DATADEF_H
+#endif
 
 void save_and_exit();
 void write_rolo (FILE *fp1, FILE *fp2);
