@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <ctype.h>
 
 #include "toolsdir/sys5.h"
@@ -94,7 +96,7 @@ int select_field_to_search_by (ptr_index,ptr_name) int *ptr_index; char **ptr_na
 
       else {
 
-//         reask2 : // MADE CHANGE HERE - unused goto label
+        reask2 : // MADE CHANGE HERE - unused goto label
 
          rval = rolo_menu_data_help_or_abort (
                     "Name of user-defined field? ",
@@ -111,15 +113,20 @@ int select_field_to_search_by (ptr_index,ptr_name) int *ptr_index; char **ptr_na
              *ptr_name = copystr(response);
              return(0);
              break;
+           default:
+              goto reask2;
+              break;
          }
       }
       break;
+    default: // MADE CHANGE HERE - added default case
+        goto reask;
+        break;
   }
-
 }
 
 
-match_by_name_or_company (search_string,sslen) char *search_string; int sslen;
+int match_by_name_or_company (search_string,sslen) char *search_string; int sslen; // MADE CHANGE HERE - added return identifier
 
 {
   char *name,*company;
@@ -143,7 +150,7 @@ match_by_name_or_company (search_string,sslen) char *search_string; int sslen;
 }
 
 
-match_link (rlink,field_index,field_name,fnlen,search_string,sslen)
+int match_link (rlink,field_index,field_name,fnlen,search_string,sslen) // MADE CHANGE HERE - removed unused variable
 
   /* if a match is present, sets the 'matched' field in the link, and */
   /* returns 1, otherwise returns 0. */
@@ -166,7 +173,7 @@ match_link (rlink,field_index,field_name,fnlen,search_string,sslen)
   if (field_index == OTHER) {
      for (j = 0; j < get_n_others(entry); j++) {
          field = get_other_field(j,entry);
-         while (*field != ':') *field++;
+         while (*field != ':') field++; // MADE CHANGE HERE - removed asterisk in front of field
          *field = '\0';
          remove_excess_blanks(name,get_other_field(j,entry));
          *field++ = ':';
@@ -192,7 +199,7 @@ match_link (rlink,field_index,field_name,fnlen,search_string,sslen)
 }
 
 
-find_all_matches (field_index,field_name,search_string,ptr_first_match)
+int find_all_matches (field_index,field_name,search_string,ptr_first_match) // MADE CHANGE HERE - added return identifier
 
   /* mark every entry in the rolodex which matches against the search_string */
   /* If the search_string is a substring of the data in the given field then */
@@ -226,7 +233,7 @@ find_all_matches (field_index,field_name,search_string,ptr_first_match)
 }
 
 
-rolo_search_mode (field_index,field_name,search_string)
+void rolo_search_mode (field_index,field_name,search_string) // MADE CHANGE HERE - added return identifier
 
   int field_index;
   char *field_name;

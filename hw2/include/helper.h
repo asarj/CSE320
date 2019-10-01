@@ -34,3 +34,6 @@ void display_field_names ();
 int rolo_menu_number_help_or_abort (char *prompt, int low, int high, int *ptr_ival);
 char *string_upcase (char *astring);
 char *string_downcase (char *astring);
+int entry_action (Ptr_Rolo_List rlink);
+void display_list_of_entries (Ptr_Rolo_List rlist);
+void summarize_entry_list (Ptr_Rolo_List rlist, char *ss);
