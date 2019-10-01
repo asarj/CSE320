@@ -199,7 +199,7 @@ void write_rolo (fp1,fp2) FILE *fp1; FILE *fp2;
 
 void display_basic_field (name,value,show,up) char *name; char *value; int show,up;
 {
-  int semi = 0;
+  // int semi = 0; // MADE CHANGE HERE - removed unused variable
   int i;
   if (all_whitespace(value) && !show) return;
   printf("%-25s",name);
@@ -208,10 +208,10 @@ void display_basic_field (name,value,show,up) char *name; char *value; int show,
        while (*++value == ' ');
        putchar('\n');
        for (i = 0; i < (up ? 28 : 25); i++) putchar(' ');
-       semi = 1;
+       // semi = 1; // MADE CHANGE HERE - removed unused variable
     }
     else {
-       semi = 0;
+       // semi = 0; // MADE CHANGE HERE - removed unused variable
        putchar(*value++);
     }
   }
