@@ -1,14 +1,16 @@
 #include <sys/file.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <sgtty.h>
 #include <sys/time.h>
 #include <signal.h>
 
-#include "sys5.h"
+#include "toolsdir/sys5.h"
 
 #ifdef TMC
-#include <ctools.h>
+#include <toolsdir/ctools.h>
 #else
 #include "toolsdir/ctools.h" // MADE CHANGE HERE - added missing import statement
 #endif
@@ -62,7 +64,7 @@ void print_short () // MADE CHANGE HERE - added return identifier
  }
 
 
-person_match (person,entry) char *person; Ptr_Rolo_Entry entry;
+int person_match (person,entry) char *person; Ptr_Rolo_Entry entry; // MADE CHANGE HERE - added return identifier
 
 /* Match against a rolodex entry's Name and Company fields. */
 /* Thus if I say 'rolo CCA' I will find people who work at CCA. */
@@ -98,7 +100,7 @@ int find_all_person_matches (person) char *person;
 }
 
 
-look_for_person (person) char *person;
+void look_for_person (person) char *person; // MADE CHANGE HERE - added return identifier
 
 /* search against Name and Company over the rolodex.  If a match is found */
 /* display the entry and give the user a choice of what to do next. */
@@ -106,7 +108,7 @@ look_for_person (person) char *person;
 {
   Ptr_Rolo_List rptr;
   int found = 0,result,nmatches;
-  static displayed_menu = 0;
+  static int displayed_menu = 0; // MADE CHANGE HERE - added identifier to variable
   char *response;
 
   rptr = Begin_Rlist;
