@@ -27,3 +27,5 @@ void display_entry_for_update (Ptr_Rolo_Entry entry);
 int rolo_menu_data_help_or_abort (char *prompt, char *helpfile, char *subject, char **ptr_response);
 void display_field_names ();
 int rolo_menu_number_help_or_abort (char *prompt, int low, int high, int *ptr_ival);
+char *string_upcase (char *astring);
+char *string_downcase (char *astring);

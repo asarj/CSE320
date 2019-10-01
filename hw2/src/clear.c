@@ -4,10 +4,10 @@
 #endif
 #undef putchar
 
-#include "helper.h" // MADE CHANGE HERE - added import statement
+// #include "helper.h" // MADE CHANGE HERE - added import statement
 
 int putchar();
-static int ok_to_clear;
+// static int ok_to_clear; // MADE CHANGE HERE - removed unused variable
 
 #ifdef TERMCAP
 static char clear_screen[128] = 0;

@@ -163,7 +163,7 @@ extern int str_to_pos_int();
   /* treats all digit strings as decimal. */
 
 
-extern int sreverse();
+extern int sreverse(); // MADE CHANGE HERE - changed return type
 
   /* char *buffer; char *astring; */
   /* puts the characters of astring in reverse order into buffer. */

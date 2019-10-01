@@ -1,5 +1,5 @@
 /* You must include "basics.h" to use this */
-include "basics.h"
+// include "basics.h"
 
 /* To use this package, first call get_args, then call the various other */
 /* routines to see which options were given, etc. */
