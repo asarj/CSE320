@@ -83,8 +83,9 @@ int get_args (argc, argv, dup_error, print_msg)
   Cmd -> non_dash_arg_list = NIL;
   for (j = 0; j < MAX_OPTIONS; j++) (Cmd -> dash_options)[j] = F;
 
-  if (argc == 1) return(NO_ARGS);
-
+  if (argc == 1){
+    return(NO_ARGS);
+  }
   i = 0;
   dash_index = NO_OPTION;
 

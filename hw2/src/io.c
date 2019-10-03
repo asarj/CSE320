@@ -363,7 +363,7 @@ void cathelpfile (filepath,helptopic,clear)
      }
      else {
         fprintf(stderr,"Fatal error, can't open %s\n",filepath);
-        exit(-1);
+        roloexit(-1); // MADE CHANGE HERE - valgrind fix
      }
      return;
   }

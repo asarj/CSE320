@@ -182,11 +182,11 @@ void locked_action () // MADE CHANGE HERE - added return identifier
 {
   if (option_present(OTHERUSERFLAG)) {
      fprintf(stderr,"Someone else is modifying that rolodex, sorry\n");
-     exit(-1);
+     roloexit(-1); // MADE CHANGE HERE - valgrind fix
   }
   else {
      cathelpfile(libdir("lockinfo"),"locked rolodex",0);
-     exit(-1);
+     roloexit(-1); // MADE CHANGE HERE - valgrind fix
   }
 }
 
@@ -204,6 +204,61 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
 
     /* parse the options and arguments, if any */
 
+    // Modified argument parsing:
+    char *options = "lsu:";
+    extern char *optarg;
+    extern int optind, optopt, opterr;
+    int lFlag = -1, sFlag = -1, uFlag = -1;
+    char c;
+    char *uName = NULL;
+    // int global_options;
+    /*
+      * global_options & 0 = invalid
+      * global_options & 1 = no args
+      * global_options & 2 = l
+      * global_options & 4 = s
+      * global_options & 8 = u
+      * global_options & 16 = search params
+    */
+    while((c = getopt(argc, argv, options)) != -1){
+      switch(c){
+        case 'l':
+          debug("%s", "L option is set");
+          lFlag = 1;
+          break;
+        case 's':
+          debug("%s", "S option is set");
+          sFlag = 1;
+          break;
+        case 'u':
+          uName = argv[optind];
+          if(*uName == '-' || uName == NULL || uName == 0){
+            fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
+            roloexit(-1);
+          }
+          uFlag = 1;
+          debug("%s", "U option is set");
+          debug("%s", uName);
+          break;
+        case '?':
+          fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
+          roloexit(-1);
+          break;
+        case 1:
+          debug("%s\n", optarg);
+          // debug("%s\n", optarg);
+          break;
+        default:
+          debug("Default option reached: %d", c);
+          break;
+      }
+    }
+    for(; optind < argc; optind++){
+        debug("extra arguments: %s\n", argv[optind]);
+    }
+    if(sFlag || lFlag || uFlag)
+      printf("%s\n", "hi");
+    return 0;
     switch (get_args(argc,argv,T,T)) {
         case ARG_ERROR :
           roloexit(-1);
