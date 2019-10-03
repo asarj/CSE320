@@ -24,6 +24,7 @@
 #include "rolodefs.h"
 #include "datadef.h"
 #include "helper.h" // MADE CHANGE HERE - added missing import statement
+#include "debug.h" // MADE CHANGE HERE - added debugger header
 
 
 static char rolodir[DIRPATHLEN];        /* directory where rolo data is */

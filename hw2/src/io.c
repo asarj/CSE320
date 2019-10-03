@@ -17,6 +17,7 @@
 #include "datadef.h"
 #include "rolofiles.h"
 #include "helper.h" // MADE CHANGE HERE - added helper header file
+#include "debug.h" // MADE CHANGE HERE - added debugger header
 
 
 char *Field_Names[N_BASIC_FIELDS] = {
@@ -143,7 +144,6 @@ int read_rolodex (fd) int fd;
      newentry -> other_fields = other_pointers;
 
   }
-
   /* check that all the entries are in alphabetical order by name */
 
   warning_given = 0;
@@ -156,7 +156,6 @@ int read_rolodex (fd) int fd;
     }
     rptr = get_next_link(rptr);
   }
-
   return(n_entries);
 
 }
