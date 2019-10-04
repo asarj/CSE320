@@ -20,6 +20,7 @@
 #include "datadef.h"
 #include "choices.h"
 #include "helper.h" // MADE CHANGE HERE - added missing import statement
+#include "debug.h"
 
 extern char *ctime();
 
@@ -113,6 +114,7 @@ void rolo_add ()
           break;
 
         case MENU_MATCH :
+
           switch (menuval) {
             case A_BACKUP :
               if (j == 0) return;
@@ -221,6 +223,9 @@ void rolo_add ()
          }
      }
   }
+  // else{
+
+  // }
 
   add_entry :
 

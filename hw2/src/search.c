@@ -314,6 +314,7 @@ void rolo_search_mode (field_index,field_name,search_string) // MADE CHANGE HERE
           "Help",S_HELP,
           "",S_SCAN_ONE_BY_ONE
        );
+     // debug("%d", rval);
      switch (rval) {
        case MENU_MATCH :
          switch (menuval) {
@@ -338,7 +339,7 @@ void rolo_search_mode (field_index,field_name,search_string) // MADE CHANGE HERE
 
        case MENU_NO_MATCH :
          ival = str_to_pos_int(response,0,n);
-         if (ival < 0) {
+         if (ival <= 0) {
             printf("Not a valid number... Please try again\n");
             sleep(2);
             goto relist;
@@ -362,9 +363,14 @@ void rolo_search_mode (field_index,field_name,search_string) // MADE CHANGE HERE
              break;
          }
          break;
+        // case MENU_EOF:
+        // case MENU_ERROR:
+        //   user_eof();
+        //   break;
      }
   }
 
   rtn :
   in_search_mode = 0;
+  // user_eof();
 }
