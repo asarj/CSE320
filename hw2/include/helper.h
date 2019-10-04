@@ -3,7 +3,11 @@
 #ifndef DATADEF_H
 #define DATADEF_H
 #endif
-
+int lFlag;
+int sFlag;
+int uFlag;
+int n_option_counter;
+char *nonargs[100];
 extern void save_and_exit();
 extern void write_rolo (FILE *fp1, FILE *fp2);
 extern void cathelpfile (char *filepath, char *helptopic, int clear);

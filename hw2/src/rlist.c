@@ -15,9 +15,11 @@ Ptr_Rolo_List new_link_with_entry ()
   Ptr_Rolo_List newlink;
   Ptr_Rolo_Entry newentry;
   newlink = (Ptr_Rolo_List) rolo_emalloc(sizeof(Rolo_List));
+  newlink -> matched = 0; // MADE CHANGE HERE - valgrind fix
   unset_matched(newlink);
   newentry = (Ptr_Rolo_Entry) rolo_emalloc(sizeof(Rolo_Entry));
   newentry -> other_fields = 0;
+  newentry -> n_others = 0; // MADE CHANGE HERE - valgrind fix
   set_entry(newlink,newentry);
   return(newlink);
 }

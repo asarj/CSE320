@@ -16,7 +16,7 @@
 #else
 #include "toolsdir/ctools.h" // MADE CHANGE HERE - added missing import statement
 #endif
-#include "toolsdir/args.h" // MADE CHANGE HERE - added missing import statement
+// #include "toolsdir/args.h" // MADE CHANGE HERE - added missing import statement
 #include "toolsdir/menu.h" // MADE CHANGE HERE - added missing import statement
 #include "toolsdir/mem.h" // MADE CHANGE HERE - added missing import statement
 
@@ -174,13 +174,13 @@ char *libdir (filename) char *filename;
 
 int rolo_only_to_read () // MADE CHANGE HERE - added return identifier
 {
-  return(option_present(SUMMARYFLAG) || n_non_option_args() > 0);
+  return(sFlag == 1 || n_option_counter > 0/* option_present(SUMMARYFLAG) || n_non_option_args() > 0 */);
 }
 
 
 void locked_action () // MADE CHANGE HERE - added return identifier
 {
-  if (option_present(OTHERUSERFLAG)) {
+  if (uFlag == 1/*option_present(OTHERUSERFLAG)*/) {
      fprintf(stderr,"Someone else is modifying that rolodex, sorry\n");
      roloexit(-1); // MADE CHANGE HERE - valgrind fix
   }
@@ -195,7 +195,7 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
 
 {
     int fd,in_use,read_only,rolofd;
-    Bool not_own_rolodex;
+    // Bool not_own_rolodex;
     char *user;
     FILE *tempfp;
 
@@ -208,9 +208,12 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
     char *options = "lsu:";
     extern char *optarg;
     extern int optind, optopt, opterr;
-    int lFlag = -1, sFlag = -1, uFlag = -1;
+    lFlag = -1;
+    sFlag = -1;
+    uFlag = -1;
+    n_option_counter = 0;
     char c;
-    char *uName = NULL;
+    // char *uName = NULL;
     // int global_options;
     /*
       * global_options & 0 = invalid
@@ -221,24 +224,38 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
       * global_options & 16 = search params
     */
     while((c = getopt(argc, argv, options)) != -1){
+      if(argc < 2)
+        break;
       switch(c){
         case 'l':
+          if(lFlag == 1){
+            fprintf(stderr,"duplicate option: %c\n", NOLOCKFLAG);
+            roloexit(-1);
+          }
           debug("%s", "L option is set");
           lFlag = 1;
           break;
         case 's':
+          if(sFlag == 1){
+            fprintf(stderr,"duplicate option: %c\n", SUMMARYFLAG);
+            roloexit(-1);
+          }
           debug("%s", "S option is set");
           sFlag = 1;
           break;
         case 'u':
-          uName = argv[optind];
-          if(*uName == '-' || uName == NULL || uName == 0){
-            fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
+          if(uFlag == 1){
+            fprintf(stderr,"duplicate option: %c\n", OTHERUSERFLAG);
+            roloexit(-1);
+          }
+          user = argv[optind];
+          if(*user == '-' || user == NULL || user == 0){
+            fprintf(stderr,"Illegal syntax using -u option\nusage: %s\n",USAGE);
             roloexit(-1);
           }
           uFlag = 1;
           debug("%s", "U option is set");
-          debug("%s", uName);
+          debug("%s", user);
           break;
         case '?':
           fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
@@ -253,42 +270,45 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
           break;
       }
     }
+    int tempIndex = 0;
     for(; optind < argc; optind++){
-        debug("extra arguments: %s\n", argv[optind]);
+        n_option_counter++;
+        nonargs[tempIndex++] = argv[optind];
+        // debug("extra arguments: %s\n", argv[optind]);
     }
-    if(sFlag || lFlag || uFlag)
-      printf("%s\n", "hi");
-    return 0;
-    switch (get_args(argc,argv,T,T)) {
-        case ARG_ERROR :
-          roloexit(-1);
-        case NO_ARGS :
-          break;
-        case ARGS_PRESENT :
-          if (ALL_LEGAL != legal_options(LEGAL_OPTIONS)) {
-                fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
-                roloexit(-1);
-          }
-    }
+
+    // switch (get_args(argc,argv,T,T)) {
+    //     case ARG_ERROR :
+    //       roloexit(-1);
+    //     case NO_ARGS :
+    //       break;
+    //     case ARGS_PRESENT :
+    //       if (ALL_LEGAL != legal_options(LEGAL_OPTIONS)) {
+    //             fprintf(stderr,"illegal option\nusage: %s\n",USAGE);
+    //             roloexit(-1);
+    //       }
+    // }
 
     /* find the directory in which the rolodex file we want to use is */
 
-    not_own_rolodex = option_present(OTHERUSERFLAG);
-    if (not_own_rolodex) {
-       if (NIL == (user = option_arg(OTHERUSERFLAG,1)) ||
-           n_option_args(OTHERUSERFLAG) != 1) {
-          fprintf(stderr,"Illegal syntax using -u option\nusage: %s\n",USAGE);
-          roloexit(-1);
-       }
-    }
-    else {
+
+    // if (uFlag == 1) {
+    //    if (NIL == (user = option_arg(OTHERUSERFLAG,1)) ||
+    //        n_option_args(OTHERUSERFLAG) != 1) {
+    //     // if(-1 == uFlag || ){}
+    //       fprintf(stderr,"Illegal syntax using -u option\nusage: %s\n",USAGE);
+    //       roloexit(-1); // MADE CHANGE HERE - valgrind fix
+    //    }
+    // }
+    if (uFlag != 1){
        if (0 == (user = getenv("HOME"))) {
           fprintf(stderr,"Cant find your home directory, no HOME\n");
           roloexit(-1);
        }
     }
 
-    if (not_own_rolodex) {
+    if (uFlag == 1) {
+
        strcpy(rolodir,home_directory(user));
        if (*rolodir == '\0') {
           fprintf(stderr,"No user %s is known to the system\n",user);
@@ -310,7 +330,7 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
 
        /* if it doesn't exist, should we create one? */
 
-       if (option_present(OTHERUSERFLAG)) {
+       if (uFlag == 1 /* option_present(OTHERUSERFLAG) */ ) {
           fprintf(stderr,"No rolodex file belonging to %s found\n",user);
           roloexit(-1);
        }
@@ -346,10 +366,10 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
        /* create a lock file.  Catch interrupts so that we can remove */
        /* the lock file if the user decides to abort */
 
-       if (!option_present(NOLOCKFLAG)) {
+       if (!(lFlag == 1)/*!option_present(NOLOCKFLAG)*/) {
           if ((fd = open(homedir(ROLOLOCK),O_EXCL|O_CREAT,00200|00400)) < 0) {
              fprintf(stderr,"unable to create lock file...\n");
-       exit(1);
+       roloexit(1); // MADE CHANGE HERE - valgrind fix
     }
           rololocked = 1;
           close(fd);
@@ -398,22 +418,22 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
     /* -s option.  Prints a short listing of people and phone numbers to */
     /* standard output */
 
-    if (option_present(SUMMARYFLAG)) {
+    if (sFlag == 1/*option_present(SUMMARYFLAG)*/) {
         print_short();
-        exit(0);
+        roloexit(0);
     }
 
     /* rolo <name1> <name2> ... */
     /* print out info about people whose names contain any of the arguments */
 
-    if (n_non_option_args() > 0) {
+    if (n_option_counter > 0/*n_non_option_args() > 0*/) {
        print_people();
-       exit(0);
+       roloexit(0);
     }
 
     /* regular rolodex program */
 
     interactive_rolo();
-    exit(0);
-
+    roloexit(0); // MADE CHANGE HERE - valgrind fix
+    return 0;
 }

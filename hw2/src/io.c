@@ -58,7 +58,8 @@ int read_rolodex (fd) int fd;
 
   if (filesize != read(fd,rolofiledata,filesize)) {
      fprintf(stderr,"rolodex read failed\n");
-     exit(-1);
+     free(rolofiledata); // MADE CHANGE HERE - valgrind fix
+     roloexit(-1);
   }
 
   j = 0;

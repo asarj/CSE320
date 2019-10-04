@@ -176,9 +176,9 @@ void print_people () // MADE CHANGE HERE - added return identifier
 {
   int index;
   char *person;
-  index = 1;
+  index = 0; // MADE CHANGE HERE - fix for getopt
   while (T) {
-     if (0 == (person = non_option_arg(index++))) break;
+     if (0 == (person = nonargs[index++]/* non_option_arg(index++)*/)) break;
      look_for_person(person);
   }
 }
