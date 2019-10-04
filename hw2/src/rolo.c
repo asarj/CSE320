@@ -63,8 +63,15 @@ void save_to_disk () // MADE CHANGE HERE - moved function up and added return id
       roloexit(-1);
     }
 
-    fclose(tempfp);
-    fclose(copyfp);
+    int x = fclose(tempfp);
+    if(x != 0)
+      roloexit(-1);
+    int y = fclose(copyfp);
+    if(y != 0)
+      roloexit(-1);
+
+
+
     if (rename(strcpy(d1,homedir(ROLODATA)),strcpy(d2,homedir(ROLOBAK))) ||
         rename(strcpy(d1,homedir(ROLOTEMP)),strcpy(d2,homedir(ROLODATA)))) {
         fprintf(stderr,"Rename failed.  Revised rolodex is in %s\n",ROLOCOPY);
@@ -103,7 +110,7 @@ char *copystr (s) char *s;
 {
  char *copy;
  if (s == 0) return(0);
- copy = rolo_emalloc(strlen(s));
+ copy = rolo_emalloc(strlen(s) + 1);
  strcpy(copy,s);
  return(copy);
 }
@@ -130,7 +137,7 @@ int user_interrupt () // MADE CHANGE HERE - added return identifier
 {
   unlink(homedir(ROLOLOCK));
   fprintf(stderr,"\nAborting rolodex, no changes since last save recorded\n");
-  exit(-1);
+  return(-1);
 }
 
 

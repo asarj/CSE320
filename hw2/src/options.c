@@ -155,7 +155,7 @@ void look_for_person (person) char *person; // MADE CHANGE HERE - added return i
            goto try_again;
          default :
            fprintf(stderr,"Impossible return from menu_match\n");
-           exit(-1);
+           roloexit(-1);
        }
     }
     rptr = get_next_link(rptr);
@@ -219,7 +219,7 @@ void interactive_rolo () // MADE CHANGE HERE - added return identifier
       case MENU_AMBIGUOUS :
       case MENU_ERROR :
         fprintf(stderr,"Impossible return 1 from main menu_match\n");
-        exit(-1);
+        roloexit(-1);
         break;
 
       case MENU_NO_MATCH :

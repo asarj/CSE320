@@ -10,7 +10,7 @@
 #endif
 
 #include "toolsdir/ctools.h"
-
+#include "datadef.h"
 /* miscellaneous fairly primitive routines that deal with characters, */
 /* strings, memory, simple input and pathnames. */
 
@@ -94,11 +94,11 @@ char *emalloc (space) int space;
   char *rval;
   if (space < 0) {
      fprintf(stderr,"Fatal error: argument to emalloc < 0\n");
-     exit(-1);
+     roloexit(-1);
   }
   if (0 == (rval = malloc((unsigned) space))) {
      fprintf(stderr,"Fatal error:  No more memory\n");
-     exit(-1);
+     roloexit(-1);
   }
   return(rval);
 }
@@ -970,7 +970,7 @@ extern char *efopen (filename,mode) char *filename; char *mode;
   if (NULL == (fp = fopen(filename,mode))) {
      fprintf(stderr,"Could not open %s, mode: %s\n",filename,mode);
      perror("Reason: ");
-     exit(1);
+     roloexit(1);
   }
   return((char *) fp);
 }

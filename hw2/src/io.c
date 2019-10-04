@@ -344,7 +344,7 @@ void display_entry_for_update (entry) Ptr_Rolo_Entry entry;
 
   n_others = get_n_others(entry);
   for (j = 0; j < n_others; j++) {
-      string = get_other_field(j,entry);
+      string = get_other_field(j ,entry);
       printf("%d. ",count++);
       display_other_field(string);
   }

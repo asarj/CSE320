@@ -6,6 +6,7 @@
 #define N_BASIC_FIELDS 8
 #define OTHER -1
 
+extern int roloexit (int rval);
 typedef enum Basic_Field {
 
     R_NAME = 0, R_WORK_PHONE, R_HOME_PHONE, R_COMPANY, R_WORK_ADDRESS,

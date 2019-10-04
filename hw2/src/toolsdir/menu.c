@@ -149,7 +149,7 @@ int menu_match (
       break;
     default :
       fprintf(stderr,"Impossible case value in menu_match\n");
-      exit(-1);
+      return(-1);
   }
 
   return(rval);
@@ -198,7 +198,7 @@ int menu_yes_no (prompt,allow_help) char *prompt; int allow_help;
       break;
     default :
       fprintf(stderr,"Fatal error:  Impossible return in menu_yes_no\n");
-      exit(-1);
+      return(-1);
   }
 }
 
@@ -229,7 +229,7 @@ extern int menu_data_help_or_abort (prompt,abortstring,ptr_response)
       break;
     default :
       fprintf(stderr,"Impossible return from menu_data_help_or_abort\n");
-      exit(-1);
+      return(-1);
   }
 }
 
@@ -345,7 +345,7 @@ int menu_yes_no_abort_or_help (prompt,abortstring,helpallowed,return_for_yes)
       break;
     default :
       fprintf(stderr,"Fatal error:  Impossible return in menu_yes_no\n");
-      exit(-1);
+      return(-1);
   }
 }
 
