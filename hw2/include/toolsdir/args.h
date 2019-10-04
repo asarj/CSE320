@@ -29,6 +29,7 @@ typedef struct {
 } Cmd_Line, *Ptr_Cmd_Line;
 
 /*--------------------------------------------------------------------------*/
+Ptr_Cmd_Line command;
 
 //extern char *malloc(); // MADE CHANGE HERE - removed function
 

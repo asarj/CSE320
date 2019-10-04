@@ -3,11 +3,23 @@
 #ifndef DATADEF_H
 #define DATADEF_H
 #endif
+
+typedef struct str_linked_list{
+    char *data;
+    struct str_linked_list *next;
+} strlist, *ptr_strlist;
+
 int lFlag;
 int sFlag;
 int uFlag;
 int n_option_counter;
 char *nonargs[100];
+int rlist_begin_free;
+int rlist_end_free;
+char *p_space;
+int free_p_space;
+ptr_strlist strlst;
+
 extern void save_and_exit();
 extern int write_rolo (FILE *fp1, FILE *fp2);
 extern void cathelpfile (char *filepath, char *helptopic, int clear);
@@ -41,3 +53,4 @@ extern char *string_downcase (char *astring);
 extern int entry_action (Ptr_Rolo_List rlink);
 extern void display_list_of_entries (Ptr_Rolo_List rlist);
 extern void summarize_entry_list (Ptr_Rolo_List rlist, char *ss);
+extern int free_r_list(Ptr_Rolo_List p);
