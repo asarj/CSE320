@@ -57,7 +57,12 @@ void save_to_disk () // MADE CHANGE HERE - moved function up and added return id
         fprintf(stderr,"Any changes made have not been recorded\n");
         roloexit(-1);
     }
-    write_rolo(tempfp,copyfp);
+    if(write_rolo(tempfp,copyfp)){
+      fprintf(stderr,"Unable to write rolodex...\n");
+      fprintf(stderr,"Any changes made have not been recorded\n");
+      roloexit(-1);
+    }
+
     fclose(tempfp);
     fclose(copyfp);
     if (rename(strcpy(d1,homedir(ROLODATA)),strcpy(d2,homedir(ROLOBAK))) ||
@@ -205,7 +210,7 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
     /* parse the options and arguments, if any */
 
     // Modified argument parsing:
-    char *options = "lsu:";
+    char *options = ":uls";
     extern char *optarg;
     extern int optind, optopt, opterr;
     lFlag = -1;
@@ -249,7 +254,7 @@ int rolo_main (argc,argv) int argc; char *argv[];  // MADE CHANGE HERE - added r
             roloexit(-1);
           }
           user = argv[optind];
-          if(*user == '-' || user == NULL || user == 0){
+          if(user == NULL || *user == '-' || user == 0){
             fprintf(stderr,"Illegal syntax using -u option\nusage: %s\n",USAGE);
             roloexit(-1);
           }

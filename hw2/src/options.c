@@ -236,6 +236,7 @@ void interactive_rolo () // MADE CHANGE HERE - added return identifier
           case M_SEARCH_BY_OTHER :
             if ((-1 == select_field_to_search_by(&field_index,&field_name)) ||
                 (0 == (search_string = select_search_string()))) {
+               user_eof();
                break;
             }
             rolo_search_mode(field_index,field_name,search_string);

@@ -9,7 +9,7 @@ int uFlag;
 int n_option_counter;
 char *nonargs[100];
 extern void save_and_exit();
-extern void write_rolo (FILE *fp1, FILE *fp2);
+extern int write_rolo (FILE *fp1, FILE *fp2);
 extern void cathelpfile (char *filepath, char *helptopic, int clear);
 extern void clearinit();
 extern void clear_the_screen();

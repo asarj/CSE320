@@ -162,7 +162,7 @@ int read_rolodex (fd) int fd;
 }
 
 
-void write_rolo_list (fp) FILE *fp;
+int write_rolo_list (fp) FILE *fp;
 
 /* write the entire in-core rolodex to a file */
 
@@ -177,23 +177,30 @@ void write_rolo_list (fp) FILE *fp;
   while (rptr != 0) {
     entry = get_entry(rptr);
     for (j = 0; j < N_BASIC_FIELDS; j++) {
-        fprintf(fp,"%s\n",get_basic_rolo_field(j,entry));
+        if(!fprintf(fp,"%s\n",get_basic_rolo_field(j,entry)))
+          return -1;
     }
     for (j = 0; j < get_n_others(entry); j++) {
-        fprintf(fp,"%s\n",get_other_field(j,entry));
+        if(!fprintf(fp,"%s\n",get_other_field(j,entry)))
+          return -1;
     }
     fprintf(fp,"\n");
     rptr = get_next_link(rptr);
   }
-
+  return 0;
 }
 
 
-void write_rolo (fp1,fp2) FILE *fp1; FILE *fp2;
+int write_rolo (fp1,fp2) FILE *fp1; FILE *fp2;
 
 {
-  write_rolo_list(fp1);
-  write_rolo_list(fp2);
+  int x = write_rolo_list(fp1);
+  if(x == -1)
+    return -1;
+  int y = write_rolo_list(fp2);
+  if(y == -1)
+    return -1;
+  return 0;
 }
 
 

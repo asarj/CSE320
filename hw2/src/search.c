@@ -19,6 +19,7 @@
 #include "datadef.h"
 #include "choices.h"
 #include "helper.h"
+#include "debug.h"
 
 
 char *select_search_string ()
@@ -41,8 +42,11 @@ char *select_search_string ()
     case MENU_DATA :
       return(copystr(response));
       break;
+    case EOF:
+      return((char *)(0));
+      break;
   }
-  return 0; // MADE CHANGE HERE - added return statement
+  return(0); // MADE CHANGE HERE - added return statement
 }
 
 
