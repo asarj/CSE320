@@ -65,6 +65,7 @@ char index_to_option (index) int index;
 /* successfully */
 
 static Ptr_Cmd_Line Cmd = NIL;
+Ptr_Cmd_Line command = NIL;
 
 int get_args (argc, argv, dup_error, print_msg)
 

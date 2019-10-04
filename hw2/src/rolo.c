@@ -16,7 +16,7 @@
 #else
 #include "toolsdir/ctools.h" // MADE CHANGE HERE - added missing import statement
 #endif
-// #include "toolsdir/args.h" // MADE CHANGE HERE - added missing import statement
+#include "toolsdir/args.h" // MADE CHANGE HERE - added missing import statement
 #include "toolsdir/menu.h" // MADE CHANGE HERE - added missing import statement
 #include "toolsdir/mem.h" // MADE CHANGE HERE - added missing import statement
 
@@ -34,6 +34,23 @@ int changed = 0;
 int reorder_file = 0;
 int rololocked = 0;
 int in_search_mode = 0;
+
+
+int rlist_free(Ptr_Rolo_List p){
+  Ptr_Rolo_List temp;
+  Ptr_Rolo_Entry temp2;
+  char **ptrs;
+  while(p != NULL){
+    temp = p;
+    temp2 = p -> entry;
+    ptrs = temp2 -> other_fields;
+    p = p -> next;
+    free(temp);
+    free(temp2);
+    free(ptrs);
+  }
+  return(0);
+}
 
 int roloexit (rval) int rval; // MADE CHANGE HERE - moved function up and added return identifier
 {

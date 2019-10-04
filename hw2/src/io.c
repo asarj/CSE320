@@ -30,6 +30,9 @@ char *Field_Names[N_BASIC_FIELDS] = {
 Ptr_Rolo_List Begin_Rlist = 0;
 Ptr_Rolo_List End_Rlist = 0;
 Ptr_Rolo_List Current_Entry = 0;
+// pointers
+int rlist_begin_free = -1;
+int rlist_end_free = -1;
 
 static char *rolofiledata;
 
@@ -85,7 +88,7 @@ int read_rolodex (fd) int fd;
           set_next_link(newlink,0);
       }
       End_Rlist = newlink;
-
+      rlist_begin_free = 1;
       /* locate each required field in the character array and change */
       /* the ending line feed to a null.  Insert a pointer to the */
       /* beginning of the field into the data entry */
