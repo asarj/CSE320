@@ -124,7 +124,9 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
           if (updated) {
              printf("Previous updates to fields in this entry ignored\n");
           }
+          free(entry -> basicfields);
           free(entry -> other_fields);
+          // free(entry -> n_others);
           free(entry);
           return;
           break;
@@ -150,7 +152,9 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
              printf("Updates ignored...\n");
              sleep(1);
              updated = 0;
+              free(entry -> basicfields);
               free(entry -> other_fields);
+              // free(entry -> n_others);
               free(entry);
              goto cancel_update;
           }
@@ -225,13 +229,17 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
       break;
 
     case MENU_EOF :
+      free(entry -> basicfields);
       free(entry -> other_fields);
+      // free(entry -> n_others);
       free(entry);
       user_eof();
       break;
 
     default :
+      free(entry -> basicfields);
       free(entry -> other_fields);
+      // free(entry -> n_others);
       free(entry);
       fprintf(stderr,"Impossible return from update menu_match\n");
       save_and_exit(-1);

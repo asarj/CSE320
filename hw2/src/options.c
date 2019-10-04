@@ -246,6 +246,7 @@ void interactive_rolo () // MADE CHANGE HERE - added return identifier
             sleep(1);
             break;
           case M_PERUSE :
+            sleep(0);
             rolo_peruse_mode(Begin_Rlist);
             break;
           case M_EXIT :

@@ -13,7 +13,7 @@ int lFlag;
 int sFlag;
 int uFlag;
 int n_option_counter;
-char *nonargs[100];
+char *nonargs[52];
 extern int rlist_begin_free;
 extern int rlist_end_free;
 // char *p_space;
