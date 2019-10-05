@@ -40,14 +40,16 @@ int rlist_free(Ptr_Rolo_List p){
   Ptr_Rolo_List temp;
   Ptr_Rolo_Entry temp2;
   char **ptrs;
-  while(p != NULL){
+  while(p != 0){
     temp = p;
     temp2 = p -> entry;
     ptrs = temp2 -> other_fields;
     p = p -> next;
-    free(temp);
+    if(ptrs){
+      free(ptrs);
+    }
     free(temp2);
-    free(ptrs);
+    free(temp);
   }
   return(0);
 }
@@ -55,6 +57,18 @@ int rlist_free(Ptr_Rolo_List p){
 int roloexit (rval) int rval; // MADE CHANGE HERE - moved function up and added return identifier
 {
 if (rololocked) unlink(homedir(ROLOLOCK));
+int i = 0;
+while(cpystrlst[i] != 0){
+  free(cpystrlst[i++]);
+}
+if(free_rolo_data){
+  free(rolofiledata);
+}
+if(free_p_space){
+  // debug("%s", "I am freeing pspace");
+  free(p_space);
+}
+rlist_free(Begin_Rlist);
 exit(rval);
 }
 
@@ -118,6 +132,8 @@ char *rolo_emalloc (size) int size;
   return(rval);
 }
 
+int cpyInd = 0;
+
 
 char *copystr (s) char *s;
 
@@ -126,8 +142,14 @@ char *copystr (s) char *s;
 
 {
  char *copy;
+ if(cpyInd == 0){
+  for(int i = 0; i < 1000; i++){
+    cpystrlst[i] = 0;
+  }
+ }
  if (s == 0) return(0);
  copy = rolo_emalloc(strlen(s) + 1);
+ cpystrlst[cpyInd++] = copy;
  strcpy(copy,s);
  return(copy);
 }

@@ -31,10 +31,11 @@ Ptr_Rolo_List Begin_Rlist = 0;
 Ptr_Rolo_List End_Rlist = 0;
 Ptr_Rolo_List Current_Entry = 0;
 // pointers
-int rlist_begin_free = -1;
-int rlist_end_free = -1;
+int rlist_begin_free = 0;
+int rlist_end_free = 0;
+int free_rolo_data = 0;
 
-static char *rolofiledata;
+char *rolofiledata;
 
 int read_rolodex (fd) int fd;
 {
@@ -56,7 +57,7 @@ int read_rolodex (fd) int fd;
   /* create an array of characters that big */
 
   rolofiledata = rolo_emalloc(filesize);
-
+  free_rolo_data = 1;
   /* read them all in at once for efficiency */
 
   if (filesize != read(fd,rolofiledata,filesize)) {

@@ -66,7 +66,10 @@ Ptr_Rolo_Entry copy_entry (entry) Ptr_Rolo_Entry entry;
          set_other_field(j,new_entry,copystr(get_other_field(j,entry)));
      }
   }
-  //new_entry -> other_fields = 0;
+  else{
+    new_entry -> other_fields = 0;
+  }
+
 
   return(new_entry);
 
@@ -124,8 +127,8 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
           if (updated) {
              printf("Previous updates to fields in this entry ignored\n");
           }
-          free(entry -> basicfields);
-          free(entry -> other_fields);
+          if(entry -> other_fields)
+            free(entry -> other_fields);
           // free(entry -> n_others);
           free(entry);
           return;
@@ -152,8 +155,8 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
              printf("Updates ignored...\n");
              sleep(1);
              updated = 0;
-              free(entry -> basicfields);
-              free(entry -> other_fields);
+              if(entry -> other_fields)
+                free(entry -> other_fields);
               // free(entry -> n_others);
               free(entry);
              goto cancel_update;
@@ -229,16 +232,16 @@ void rolo_update_mode (rlink) Ptr_Rolo_List rlink;
       break;
 
     case MENU_EOF :
-      free(entry -> basicfields);
-      free(entry -> other_fields);
+      if(entry -> other_fields)
+        free(entry -> other_fields);
       // free(entry -> n_others);
       free(entry);
       user_eof();
       break;
 
     default :
-      free(entry -> basicfields);
-      free(entry -> other_fields);
+      if(entry -> other_fields)
+        free(entry -> other_fields);
       // free(entry -> n_others);
       free(entry);
       fprintf(stderr,"Impossible return from update menu_match\n");

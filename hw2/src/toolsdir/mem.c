@@ -26,7 +26,7 @@ static char *ptr_next_byte;             /* next free byte */
 static char *ptr_space;                 /* current block */
 static int chunk_size;                  /* size of block last allocated */
 char *p_space;
-int free_p_space = -1;
+int free_p_space = 0;
 
 // extern char *malloc(); // MADE CHANGE HERE - removed duplicate function
 
@@ -45,6 +45,7 @@ int allocate_memory_chunk (space) int space;
   bytes_left = space;
   chunk_size = space;
   free_p_space = 1;
+  p_space = ptr_space;
   return(0);
 }
 

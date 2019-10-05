@@ -16,9 +16,14 @@ int n_option_counter;
 char *nonargs[52];
 extern int rlist_begin_free;
 extern int rlist_end_free;
-// char *p_space;
-// int free_p_space;
+char *p_space;
+extern int free_p_space;
 ptr_strlist strlst;
+char *cpystrlst[1000];
+extern int cpyInd;
+Ptr_Rolo_List Begin_Rlist;
+extern int free_rolo_data;
+char *rolofiledata;
 
 extern void save_and_exit();
 extern int write_rolo (FILE *fp1, FILE *fp2);
