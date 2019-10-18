@@ -8,8 +8,22 @@
 #include <string.h>
 #include "debug.h"
 #include "sfmm.h"
+#include "helper.h"
 
 void *sf_malloc(size_t size) {
+    if(size == 0)
+        return NULL;
+    if(!calledBefore){
+        sf_mem_grow();
+        // set new page
+        // set free list
+        calledBefore = 1;
+    }
+    else{
+        // search free list
+        // if enough ...
+        // else {sf_mem_grow(), set new page, set free list}
+    }
     return NULL;
 }
 
