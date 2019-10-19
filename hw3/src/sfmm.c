@@ -10,11 +10,34 @@
 #include "sfmm.h"
 #include "helper.h"
 
+sf_prologue *pptr;
+sf_epilogue *eptr;
+
 void *sf_malloc(size_t size) {
+    // void *sf_ptr;
     if(size == 0)
         return NULL;
     if(!calledBefore){
         sf_mem_grow();
+        void *start = sf_mem_start();
+        start = start + 8; // allocate 64 bits
+        pptr = start;
+        pptr->padding1 = 0;
+        pptr->header = 32 + 3;
+        pptr->unused1 = NULL;
+        pptr->unused2 = NULL;
+        pptr->footer = pptr->header ^ sf_magic();
+
+        void *end = sf_mem_end();
+        end = end - 8;
+        eptr = end;
+        eptr -> header = 2;
+
+        // sf_block *block_to_add = start + sizeof(pptr);
+        // sf_show_blocks();
+        sf_show_heap();
+        // sf_show_heap();
+
         // set new page
         // set free list
         calledBefore = 1;
