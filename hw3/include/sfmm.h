@@ -112,7 +112,7 @@ typedef struct sf_block {
     |                                         unused                                          | padding
     |                                         64 bits                                         |
     +--------------------------------------------+------------------------+---------+---------+
-    |                                     block_size (= 16)               |  alloc  |prv alloc| prologue
+    |                                     block_size (= 32)               |  alloc  |prv alloc| prologue
     |                                  (2 LSB's implicitly 0)             |   (1)   |   (1)   | header
     |                                         64 bits                     |  1 bit  |  1 bit  |
     +--------------------------------------------+------------------------+---------+---------+ <- (aligned)
@@ -124,7 +124,7 @@ typedef struct sf_block {
     |                                         unused                                          | padding
     |                                         64 bits                                         |
     +--------------------------------------------+------------------------+---------+---------+ <- (aligned)
-    |                                     block_size (= 16)               |  alloc  |prv alloc|
+    |                                     block_size (= 32)               |  alloc  |prv alloc|
     |                                  (2 LSB's implicitly 0)             |   (1)   |   (1)   | prologue
     |                                         64 bits                     |  1 bit  |  1 bit  | footer
     +-----------------------------------------------------------------------------------------+

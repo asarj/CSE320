@@ -16,15 +16,15 @@ int main(int argc, char const *argv[]) {
 
     // return EXIT_SUCCESS;
 
-    sf_mem_init();
+    // sf_mem_init();
 
-    double* ptr = sf_malloc(sizeof(int));
+    double* ptr = sf_malloc(sizeof(double));
 
     // *ptr = 320320320e-320;
 
-    // printf("%f\n", *ptr);
+    printf("%f\n", *ptr);
 
-    sf_free(ptr);
+    // sf_free(ptr);
 
     sf_mem_fini();
 
