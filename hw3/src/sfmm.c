@@ -10,36 +10,65 @@
 #include "sfmm.h"
 #include "helper.h"
 
-sf_prologue *pptr;
-sf_epilogue *eptr;
+// Pointers in memory
+sf_prologue pptr;
+sf_prologue *sfp;
 
-int write_prologue(sf_prologue *ptr){
-    void *start = sf_mem_start();
-    if(start == (void *)-1 || start == NULL)
+sf_epilogue eptr;
+sf_epilogue *efp;
+
+sf_block blk;
+sf_block *blk_ptr;
+
+sf_footer ftr;
+sf_footer *ftr_ptr;
+
+int write_prologue(){
+    sfp = (sf_prologue *)sf_mem_start();
+    if(sfp == (void *)-1 || sfp == NULL)
         return 0;
     // start = start + 8; // allocate 64 bits
-    ptr = start;
-    ptr->padding1 = 0;
-    ptr->header = 32 + 3;
-    ptr->unused1 = NULL;
-    ptr->unused2 = NULL;
-    ptr->footer = ptr->header ^ sf_magic();
-
+    (pptr).padding1 = 0;
+    (pptr).header = 32 + 3;
+    (pptr).footer = (pptr).header ^ sf_magic();
+    *sfp = pptr;
+    sfp = sfp + 1;
     return 1;
 }
 
-int add_block(size_t size){
-    return 111;
+int write_epilogue(){
+    efp = (sf_epilogue *)sf_mem_end();
+    if(efp == (void *)-1 || efp == NULL)
+        return 0;
+    efp = efp - 1;
+    eptr.header = 2;
+    *efp = eptr;
+
+    ftr_ptr = (sf_footer *) efp;
+    ftr_ptr = ftr_ptr - 1;
+    ftr = blk.header ^ sf_magic();
+    *ftr_ptr = ftr;
+    return 1;
 }
 
-int write_epilogue(sf_epilogue *ptr){
-    void *end = sf_mem_end();
-    if(end == (void *)-1 || end == NULL)
+int add_first_block(){
+    void* diff = (void*)sfp;
+    if(diff == NULL)
         return 0;
-    end = end - 9;
-    ptr = end;
-    ptr = 0;
+    diff = diff - 8;
+    blk_ptr = (sf_block*) diff;
+    blk.prev_footer = pptr.footer;
+    blk.header = 4048;
+    *blk_ptr = blk;
+    return 1;
+}
 
+int init_free_lists(){
+    for(int i = 0; i < NUM_FREE_LISTS; i++){
+        sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
+        sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
+        // sf_free_list_heads[i].body.payload[0] = 1;
+    }
     return 1;
 }
 
@@ -48,32 +77,23 @@ void *sf_malloc(size_t size) {
     // sf_header head;
     // sf_footer foot;
     debug("%ld", size);
-    if(size == 0)
+    if(size == 0 || size >= 4 * PAGE_SZ)
         return NULL;
     if(!calledBefore){
 
         sf_mem_init();
         sf_mem_grow();
-
-        if(write_prologue(pptr) == 0){
-            // handle case
+        init_free_lists();
+        if(write_prologue() == 0)
             return NULL;
-        }
-        // if(add_block(size) == 0){
-        //     // handle case
-        //     return NULL;
-        // }
-        if(write_epilogue(eptr) == 0){
-            // handle case
+        if(add_first_block() == 0)
             return NULL;
-        }
+        if(write_epilogue() == 0)
+            return NULL;
 
         // sf_show_blocks();
+        // sf_show_free_lists();
         sf_show_heap();
-        // sf_show_heap();
-
-        // set new page
-        // set free list
         calledBefore = 1;
     }
     else{

@@ -8,6 +8,7 @@
 
 int calledBefore = 0;
 
-int write_prologue(sf_prologue *ptr);
-int write_epilogue(sf_epilogue *ptr);
-int add_block(size_t size);
+int write_prologue();
+int write_epilogue();
+int add_first_block();
+int init_free_lists();
