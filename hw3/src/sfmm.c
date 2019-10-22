@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "debug.h"
 #include "sfmm.h"
 #include "helper.h"
@@ -22,6 +23,8 @@ sf_block *blk_ptr;
 
 sf_footer ftr;
 sf_footer *ftr_ptr;
+
+void *mem_grow;
 
 int write_prologue(){
     sfp = (sf_prologue *)sf_mem_start();
@@ -67,34 +70,71 @@ int init_free_lists(){
     for(int i = 0; i < NUM_FREE_LISTS; i++){
         sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
         sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
-        // sf_free_list_heads[i].body.payload[0] = 1;
     }
     return 1;
 }
 
+int add_first_block_to_free_list(void *mem_grow/*, size_t size*/){
+    int size = PAGE_SZ - sizeof(sfp) - sizeof(efp);
+    // int size = sizeof(blk_ptr);
+    int i;
+    // every other call is just page_sz - epilogue
+    if(size == M)
+        i = 0;
+    else if(size > M && (size <= 2 * M))
+        i = 1;
+    else if((size > 2 * M) && (size <= 4 * M))
+        i = 2;
+    else if ((size > 4 * M) && (size <= 8 * M))
+        i = 3;
+    else if ((size > 8 * M) && (size <= 16 * M))
+        i = 4;
+    else if ((size > 16 * M) && (size <= 32 * M))
+        i = 5;
+    else if ((size > 32 * M) && (size <= 64 * M))
+        i = 6;
+    else if ((size > 64 * M) && (size <= 128 * M))
+        i = 7;
+    else if ((size > 128 * M))
+        i = 8;
+    else
+        i = -1;
+    // do the rest
+    if(i != -1){
+        blk_ptr->body.links.next = sf_free_list_heads[i].body.links.next;
+        blk_ptr->body.links.prev = &sf_free_list_heads[i];
+        blk_ptr->body.links.next->body.links.prev = blk_ptr;
+        sf_free_list_heads[i].body.links.next = blk_ptr;
+        return 1;
+    }
+    return -1;
+}
+
 void *sf_malloc(size_t size) {
-    // void *sf_ptr;
-    // sf_header head;
-    // sf_footer foot;
-    debug("%ld", size);
-    if(size == 0 || size >= 4 * PAGE_SZ)
+    // debug("%l)
+    if(size == 0)
         return NULL;
+    else if(size >= 4 * PAGE_SZ){
+        sf_errno = ENOMEM;
+        return NULL;
+    }
     if(!calledBefore){
 
-        sf_mem_init();
-        sf_mem_grow();
+        // sf_mem_init();
+        mem_grow = sf_mem_grow();
         init_free_lists();
+
         if(write_prologue() == 0)
             return NULL;
         if(add_first_block() == 0)
             return NULL;
+        if(add_first_block_to_free_list(mem_grow/*, size*/) == 0)
+            return NULL;
         if(write_epilogue() == 0)
             return NULL;
 
-        // sf_show_blocks();
-        // sf_show_free_lists();
-        sf_show_heap();
         calledBefore = 1;
+        return blk_ptr;
     }
     else{
         // search free list
