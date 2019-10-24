@@ -18,12 +18,20 @@ int main(int argc, char const *argv[]) {
 
     // sf_mem_init();
 
-    double* ptr = sf_malloc(sizeof(double));
+    int* ptr = sf_malloc(sizeof(int));
+    double* pt2 = sf_malloc(sizeof(double));
 
     // *ptr = 320320320e-320;
+    *ptr = 4;
 
     // printf("%f\n", ptr);
-    if(ptr == NULL){
+    // if(ptr == NULL){
+    //     printf("\n");
+    // }
+    // else{
+    //     printf("\n");
+    // }
+    if(ptr == NULL || pt2 == NULL){
         printf("\n");
     }
     else{

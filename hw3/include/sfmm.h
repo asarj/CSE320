@@ -70,7 +70,7 @@
 
 #define PREV_BLOCK_ALLOCATED  0x1
 #define THIS_BLOCK_ALLOCATED  0x2
-#define BLOCK_SIZE_MASK 0xfffffffc
+#define BLOCK_SIZE_MASK 0xFFFFFFFFFFFFFFFC
 
 typedef size_t sf_header;
 typedef size_t sf_footer;
