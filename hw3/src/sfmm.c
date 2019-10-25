@@ -266,8 +266,69 @@ void *sf_malloc(size_t size) {
     // return NULL;
 }
 
-void coalesce(void *pp){
+void coalesce(void *pp, sf_footer foot, sf_header head){
 
+    if(pp - sf_mem_start() == 48){ // do right code here
+        sf_block* curr = (sf_block *)pp - 16;
+        sf_block* prev = (sf_block *)pp - 16 - (foot & BLOCK_SIZE_MASK);
+        sf_block* next = (sf_block *)pp - 16 + (head & BLOCK_SIZE_MASK);
+        if(!(next->header & PREV_BLOCK_ALLOCATED)){
+
+            next->body.links.prev->body.links.next = curr;
+            next->body.links.prev->body.links.prev = curr;
+
+            curr->header += (prev->header & BLOCK_SIZE_MASK);
+            next->prev_footer = prev->header ^ sf_magic();
+        }
+    }
+    else if(pp + (head & BLOCK_SIZE_MASK) == sf_mem_end() - 8){ // do left code here
+        sf_block* curr = (sf_block *)pp - 16;
+        sf_block* prev = (sf_block *)pp - 16 - (foot & BLOCK_SIZE_MASK);
+        sf_block* next = (sf_block *)pp - 16 + (head & BLOCK_SIZE_MASK);
+
+        next->body.links.prev->body.links.next = curr;
+        next->body.links.prev->body.links.prev = curr;
+
+        prev->header += (curr->header & BLOCK_SIZE_MASK);
+        next->prev_footer = prev->header ^ sf_magic();
+        next->header = next->header - 1;
+    }
+
+
+
+    // Middle
+    if(0){
+
+    }
+    // Left
+    if(!(foot & PREV_BLOCK_ALLOCATED)){
+        sf_block* curr = (sf_block *)pp - 16;
+        sf_block* prev = (sf_block *)pp - 16 - (foot & BLOCK_SIZE_MASK);
+        sf_block* next = (sf_block *)pp - 16 + (head & BLOCK_SIZE_MASK);
+
+        next->body.links.prev->body.links.next = curr;
+        next->body.links.prev->body.links.prev = curr;
+
+        prev->header += (curr->header & BLOCK_SIZE_MASK);
+        next->prev_footer = prev->header ^ sf_magic();
+        next->header = next->header - 1;
+
+    }
+    // Right
+    if(!(head & PREV_BLOCK_ALLOCATED)){
+        sf_block* curr = (sf_block *)pp - 16;
+        sf_block* prev = (sf_block *)pp - 16 - (foot & BLOCK_SIZE_MASK);
+        sf_block* next = (sf_block *)pp - 16 + (head & BLOCK_SIZE_MASK);
+        if(!((next->prev_footer ^ sf_magic()) & PREV_BLOCK_ALLOCATED)){
+
+            next->body.links.prev->body.links.next = curr;
+            next->body.links.prev->body.links.prev = curr;
+
+            curr->header += (prev->header & BLOCK_SIZE_MASK);
+            next->prev_footer = prev->header ^ sf_magic();
+        }
+
+    }
 }
 
 void sf_free(void *pp) {
@@ -275,15 +336,15 @@ void sf_free(void *pp) {
     sf_header head = ((sf_header)*(char *)pp - 24 - ((sf_header)*(char *)pp-8));
     if(pp == NULL ||
         ((size_t)*(char *)(pp - 8) & PREV_BLOCK_ALLOCATED) == 0 ||
-        !(pp < sf_mem_end() - 24 && pp > sf_mem_start() + 48) ||
+        !(pp <= sf_mem_end()&& pp >= sf_mem_start()) ||
         (size_t)*(char *)(pp - 8) < 32 ||
         ((((size_t)*(char *)(pp - 8) & PREV_BLOCK_ALLOCATED) == 0) && foot != 0) ||
         (((((size_t)*(char *)(pp - 8) & BLOCK_SIZE_MASK) % 16 != 0))))
         abort();
     else if(head != foot)
         abort();
-
-    coalesce(pp);
+    // else if()
+    coalesce(pp, foot, head);
     return;
 }
 

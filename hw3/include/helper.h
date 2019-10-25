@@ -14,7 +14,7 @@ void* search_free_lists(size_t size);
 void add_to_free_list(int size, void* add);
 int roundTo16(int num, int mul);
 int getIndexFromSize(int size);
-void coalesce(void *pp);
+void coalesce(void *pp, sf_footer foot, sf_header head);
 
 #endif
 #ifndef SFMM_H
