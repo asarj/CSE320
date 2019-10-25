@@ -281,7 +281,7 @@ void coalesce(void *pp, sf_footer foot, sf_header head, int flag){
     else if(flag == 1){ // Right
         sf_block* next = (sf_block *)(pp - 16 + (head & BLOCK_SIZE_MASK));
         if(!(next->header & THIS_BLOCK_ALLOCATED)){
-        debug("I AM CO RIGHT");
+        // debug("I AM CO RIGHT");
             // sf_block* prev = (sf_block *)(pp - 16 - (foot & BLOCK_SIZE_MASK));
 
             if(next == blk_ptr){
@@ -335,32 +335,32 @@ void sf_free(void *pp) {
         prev_head = *((sf_header*)((char *)pp - 8 - (foot & BLOCK_SIZE_MASK)));
     }
     if (pp == NULL){
-        debug("1");
+        // debug("1");
         abort();
     }
     else if ((head & BLOCK_SIZE_MASK) == 0){
-        debug("2");
+        // debug("2");
         abort();
     }
     else if (!(pp <= sf_mem_end() + 48 && pp >= sf_mem_start() + 32)){
-        debug("3");
+        // debug("3");
         abort();
     }
     else if ((head & BLOCK_SIZE_MASK) < 32){
-        debug("4");
+        // debug("4");
         abort();
     }
     else if (prev_head != foot){
-        debug("Prev: %ld Foot: %ld", prev_head, foot);
-        debug("5");
+        // debug("Prev: %ld Foot: %ld", prev_head, foot);
+        // debug("5");
         abort();
     }
     else if(((foot & THIS_BLOCK_ALLOCATED) == 0) && (prev_head & PREV_BLOCK_ALLOCATED) != 0){
-        debug("6");
+        // debug("6");
         abort();
     }
     else if ((head & BLOCK_SIZE_MASK) % 16 != 0){
-        debug("7");
+        // debug("7");
         abort();
     }
     else if(pp - sf_mem_start() == 48 && sf_mem_end() - pp + 8 == (head & BLOCK_SIZE_MASK)){
@@ -449,12 +449,30 @@ void *sf_realloc(void *pp, size_t rsize) {
     }
     else{
         // splinter handling
-        rsize += roundTo16(rsize + 16, 16);
-        if((curr->header & BLOCK_SIZE_MASK) >= 32){
-            curr->header = 32;
+        rsize = roundTo16(rsize + 16, 16);
+        // if((curr->header & BLOCK_SIZE_MASK) >= 32){
+        //     curr->header = 32;
+        // }
+
+        if(currSize >= rsize + 32){
+            debug("Header : %ld", curr->header);
+            curr->header = curr->header - currSize + rsize;
+            debug("Header : %ld", curr->header);
+            sf_block b;
+            b.header = currSize - rsize;
+            b.header |= 0x3;
+            b.prev_footer = curr->header ^ sf_magic();
+            sf_block *bn = (sf_block*)((void*)curr + rsize);
+            *bn = b;
+
+            sf_footer *f = (sf_footer*)(((void*)curr) + currSize);
+            *f = bn->header ^ sf_magic();
+            // sf_header *h = (sf_header*)((void*)curr + currSize + 8);
+            // *h =
+            sf_free(bn->body.payload);
         }
 
+        return pp;
 
     }
-    return NULL;
 }

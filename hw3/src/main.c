@@ -45,9 +45,11 @@ int main(int argc, char const *argv[]) {
     // sf_show_blocks();
     // sf_show_free_lists();
 
-    void *x = sf_malloc(sizeof(int));
-    /* void *y = */ sf_malloc(10);
-    x = sf_realloc(x, sizeof(int) * 10);
+    void *x = sf_malloc(sizeof(int) * 8);
+    void *y = sf_realloc(x, sizeof(char));
+    if(y == NULL){
+
+    }
     sf_show_heap();
     sf_mem_fini();
 
