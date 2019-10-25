@@ -1,10 +1,6 @@
 #include <stdio.h>
 #ifndef HELPER_H
 #define HELPER_H
-#endif
-#ifndef SFMM_H
-#define SFMM_H
-#endif
 
 #define M 32
 int calledBefore = 0;
@@ -18,3 +14,10 @@ void* search_free_lists(size_t size);
 void add_to_free_list(int size, void* add);
 int roundTo16(int num, int mul);
 int getIndexFromSize(int size);
+void coalesce(void *pp);
+
+#endif
+#ifndef SFMM_H
+#define SFMM_H
+#endif
+

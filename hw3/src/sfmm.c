@@ -161,7 +161,7 @@ void *search_free_lists(size_t size){
             int size_to_add = addPoint.header & BLOCK_SIZE_MASK;
             add = add - (addPoint.header & BLOCK_SIZE_MASK);
             add_to_free_list(size_to_add, add);
-            sf_show_blocks();
+            // sf_show_blocks();
         }
 
         return (*blk).body.payload;
@@ -183,7 +183,7 @@ void add_to_free_list(int size, void *add){
 void *sf_malloc(size_t size) {
     if(size == 0)
         return NULL;
-    else if(size >= 4 * PAGE_SZ || usedSpace + size >= 4 * PAGE_SZ){
+    else if(size > 4 * PAGE_SZ || usedSpace + size > 4 * PAGE_SZ){
         sf_errno = ENOMEM;
         return NULL;
     }
@@ -207,9 +207,11 @@ void *sf_malloc(size_t size) {
 
         // return blk_ptr;
     }
+    if(size != 4*PAGE_SZ){
+        size = size + 16;
+        size = roundTo16(size, 16);
+    }
 
-    size = size + 16;
-    size = roundTo16(size, 16);
     // debug("%ld", size);
     while(size > sf_mem_end() - (void*)(blk_ptr) - 8){
         mem_grow = sf_mem_grow();
@@ -264,7 +266,24 @@ void *sf_malloc(size_t size) {
     // return NULL;
 }
 
+void coalesce(void *pp){
+
+}
+
 void sf_free(void *pp) {
+    sf_footer foot = ((((sf_footer)*(char *)pp - 16) ^ sf_magic()));
+    sf_header head = ((sf_header)*(char *)pp - 24 - ((sf_header)*(char *)pp-8));
+    if(pp == NULL ||
+        ((size_t)*(char *)(pp - 8) & PREV_BLOCK_ALLOCATED) == 0 ||
+        !(pp < sf_mem_end() - 24 && pp > sf_mem_start() + 48) ||
+        (size_t)*(char *)(pp - 8) < 32 ||
+        ((((size_t)*(char *)(pp - 8) & PREV_BLOCK_ALLOCATED) == 0) && foot != 0) ||
+        (((((size_t)*(char *)(pp - 8) & BLOCK_SIZE_MASK) % 16 != 0))))
+        abort();
+    else if(head != foot)
+        abort();
+
+    coalesce(pp);
     return;
 }
 
