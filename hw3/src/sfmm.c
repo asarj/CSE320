@@ -81,10 +81,10 @@ int write_epilogue(){
     eptr.header = 2;
     *efp = eptr;
 
-    ftr_ptr = (sf_footer *) efp;
-    ftr_ptr = ftr_ptr - 1;
-    ftr = blk.header ^ sf_magic();
-    *ftr_ptr = ftr;
+    // ftr_ptr = (sf_footer *) efp;
+    // ftr_ptr = ftr_ptr - 1;
+    // ftr = blk.header ^ sf_magic();
+    // *ftr_ptr = ftr;
     return 1;
 }
 
@@ -97,6 +97,7 @@ int add_first_block(size_t size){
     blk.prev_footer = pptr.footer;
     blk.header = 4048;
     *blk_ptr = blk;
+    debug("%ld", sf_mem_start() - (void*)blk_ptr);
     return 1;
 }
 
@@ -130,20 +131,25 @@ void *search_free_lists(size_t size){
         }
         if(i == 9)
             i = 8;
+        debug("%ld", size);
         sf_block *blk = sf_free_list_heads[i].body.links.next;
+        debug("The size of the block is: %ld", ((*blk).header));
         if((*blk).header >= size){
+            debug("I AM INSIDE");
             sf_block blk2;
             blk2.prev_footer = (*blk).prev_footer;
+            debug("%ld", blk2.prev_footer);
             blk2.header = size + 3;
-
+            debug("%ld", size);
             void *add = (void *)blk;
             add = add + size;
 
             sf_block addPoint;
             addPoint.prev_footer = blk2.header ^ sf_magic();
-            addPoint.header = ((*blk).header & BLOCK_SIZE_MASK)- size + 1;
+            debug("%ld", addPoint.prev_footer);
+            addPoint.header = ((*blk).header & BLOCK_SIZE_MASK) - size + 1;
             // debug("%ld", addPoint.header & BLOCK_SIZE_MASK);
-            // debug("%ld", size);
+            //debug("%ld", size);
             *blk = blk2;
             *((sf_block*)add) = addPoint;
             add = add + (addPoint.header & BLOCK_SIZE_MASK); // fix for 64
@@ -152,11 +158,10 @@ void *search_free_lists(size_t size){
             // blk->body.links.prev = &sf_free_list_heads[i];
             sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
             sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
-
             int size_to_add = addPoint.header & BLOCK_SIZE_MASK;
             add = add - (addPoint.header & BLOCK_SIZE_MASK);
             add_to_free_list(size_to_add, add);
-
+            sf_show_blocks();
         }
 
         return (*blk).body.payload;
@@ -178,7 +183,7 @@ void add_to_free_list(int size, void *add){
 void *sf_malloc(size_t size) {
     if(size == 0)
         return NULL;
-    else if(size >= 4 * PAGE_SZ){
+    else if(size >= 4 * PAGE_SZ || usedSpace + size >= 4 * PAGE_SZ){
         sf_errno = ENOMEM;
         return NULL;
     }
@@ -186,9 +191,10 @@ void *sf_malloc(size_t size) {
         mem_grow = sf_mem_grow();
         if(mem_grow == NULL)
             return NULL;
-
+        usedSpace += 4096;
         init_free_lists();
-
+        debug("%ld", size);
+        // size += 8;
         if(write_prologue() == 0)
             return NULL;
         if(add_first_block(size) == 0)
@@ -197,13 +203,59 @@ void *sf_malloc(size_t size) {
             return NULL;
         if(write_epilogue() == 0)
             return NULL;
-
         calledBefore = 1;
+
         // return blk_ptr;
     }
 
     size = size + 16;
     size = roundTo16(size, 16);
+    // debug("%ld", size);
+    while(size > sf_mem_end() - (void*)(blk_ptr) - 8){
+        mem_grow = sf_mem_grow();
+        if(mem_grow == NULL)
+            return NULL;
+        void* e = sf_mem_end();
+        e -= 8;
+        memcpy(e, efp, 8);
+        sf_header blank = 0;
+        (*efp).header = blank;
+        blk_ptr->header += 4096;
+        usedSpace += 4096;
+        // if(usedSpace >= 4 * PAGE_SZ){
+        //     debug("Error caught");
+        //     sf_errno = ENOMEM;
+        //     return NULL;
+        // }
+        if((blk_ptr->header ^ BLOCK_SIZE_MASK) == 4096){
+            blk_ptr->body.links.next->body.links.prev = blk_ptr->body.links.prev;
+            blk_ptr->body.links.prev->body.links.next = blk_ptr->body.links.next;
+
+            sf_free_list_heads[7].body.links.prev->body.links.next = blk_ptr;
+            blk_ptr->body.links.prev = sf_free_list_heads[7].body.links.prev;
+            sf_free_list_heads[7].body.links.next = blk_ptr;
+            blk_ptr->body.links.next = &sf_free_list_heads[7];
+        }
+        else{
+            blk_ptr->body.links.next->body.links.prev = blk_ptr->body.links.prev;
+            blk_ptr->body.links.prev->body.links.next = blk_ptr->body.links.next;
+
+            sf_free_list_heads[8].body.links.prev->body.links.next = blk_ptr;
+            blk_ptr->body.links.prev = sf_free_list_heads[8].body.links.prev;
+            sf_free_list_heads[8].body.links.next = blk_ptr;
+            blk_ptr->body.links.next = &sf_free_list_heads[8];
+        }
+        // sf_show_free_lists();
+        void* add = (void*)efp;
+        add = add + ((*efp).header & BLOCK_SIZE_MASK); // fix for 64
+        *((sf_footer *)add) = (*efp).header ^ sf_magic();
+        efp = (sf_epilogue*)e;
+        efp->header = 2;
+        debug("%ld", size);
+    }
+
+    // debug("The decimal is %ld",(void*)(sf_free_list_heads[7].body.links.next)-sf_mem_start());
+    debug("%ld", size);
     return search_free_lists(size);
         // search free list
         // if enough ...

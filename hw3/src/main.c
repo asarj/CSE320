@@ -5,38 +5,39 @@ int main(int argc, char const *argv[]) {
     sf_mem_init();
 
     // double* ptr = sf_malloc(sizeof(double));
-
+    // double* ptr2 = sf_malloc(sizeof(double));
     // *ptr = 320320320e-320;
 
-    // printf("%f\n", *ptr);
+    // printf("%f\n%f\n", *ptr, *ptr2);
 
     // sf_free(ptr);
-
+    // sf_show_heap();
     // sf_mem_fini();
 
     // return EXIT_SUCCESS;
 
     // sf_mem_init();
 
-    int* ptr = sf_malloc(sizeof(int));
-    double* pt2 = sf_malloc(sizeof(double));
+    // int* ptr = sf_malloc(sizeof(int));
+    // double* pt2 = sf_malloc(sizeof(double));
+    void *ptr = sf_malloc(PAGE_SZ << 2);
 
     // *ptr = 320320320e-320;
-    *ptr = 4;
+    // *ptr = 4;
 
-    // printf("%f\n", ptr);
-    // if(ptr == NULL){
-    //     printf("\n");
-    // }
-    // else{
-    //     printf("\n");
-    // }
-    if(ptr == NULL || pt2 == NULL){
+    // printf("%ls\n", ptr);
+    if(ptr == NULL){
         printf("\n");
     }
     else{
         printf("\n");
     }
+    // if(ptr == NULL || pt2 == NULL){
+    //     printf("\n");
+    // }
+    // else{
+    //     printf("\n");
+    // }
 
     // sf_free(ptr);
 
