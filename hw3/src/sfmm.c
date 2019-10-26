@@ -25,6 +25,7 @@ sf_footer ftr;
 sf_footer *ftr_ptr;
 
 void *mem_grow;
+int did_coalesce;
 
 int roundTo16(int num, int mul){
     if (num % mul == 0)
@@ -180,7 +181,7 @@ void add_to_free_list(int size, void *add){
 }
 
 void *sf_malloc(size_t size) {
-    if(size == 0)
+    if(size <= 0)
         return NULL;
     else if(size > 4 * PAGE_SZ || usedSpace + size > 4 * PAGE_SZ){
         sf_errno = ENOMEM;
@@ -264,7 +265,7 @@ void *sf_malloc(size_t size) {
     // }
     // return NULL;
 }
-int did_coalesce = 0;
+
 void coalesce(void *pp, sf_footer foot, sf_header head, int flag){
     sf_block* curr = (sf_block *)(pp - 16);
     if(flag == 0){ // Left
@@ -329,6 +330,12 @@ void sf_free(void *pp) {
     sf_footer foot = (*((sf_footer*)(pp - 16)) ^ sf_magic());
     sf_header head = *((sf_header*)(pp - 8));
     sf_header prev_head;
+
+    if (pp == NULL){
+        // debug("1");
+        abort();
+    }
+
     if(pp - sf_mem_start() - 16 == 32) {
         prev_head = *((sf_header*)((char *)pp - 40));
     } else {
@@ -455,9 +462,9 @@ void *sf_realloc(void *pp, size_t rsize) {
         // }
 
         if(currSize >= rsize + 32){
-            debug("Header : %ld", curr->header);
+            // debug("Header : %ld", curr->header);
             curr->header = curr->header - currSize + rsize;
-            debug("Header : %ld", curr->header);
+            // debug("Header : %ld", curr->header);
             sf_block b;
             b.header = currSize - rsize;
             b.header |= 0x3;

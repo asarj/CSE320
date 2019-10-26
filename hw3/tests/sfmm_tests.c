@@ -180,4 +180,49 @@ Test(sf_memsuite_student, realloc_smaller_block_free_block, .init = sf_mem_init,
 //STUDENT UNIT TESTS SHOULD BE WRITTEN BELOW
 //DO NOT DELETE THESE COMMENTS
 //############################################
+Test(sf_memsuite_student, sf_free_null_check, .signal = SIGSEGV, .init = sf_mem_init, .fini = sf_mem_fini){
+	sf_free(NULL);
+}
 
+Test(sf_memsuite_student, sf_realloc_null_check, .init = sf_mem_init, .fini = sf_mem_fini){
+	cr_assert(sf_realloc(NULL, 10000000) == NULL);
+}
+
+Test(sf_memsuite_student, sf_malloc_no_size, .init = sf_mem_init, .fini = sf_mem_fini){
+	cr_assert(sf_malloc(0) == NULL);
+}
+
+Test(sf_memsuite_student, sf_malloc_and_free_hw_base_test_case, .init = sf_mem_init, .fini = sf_mem_fini){
+	double* ptr = sf_malloc(sizeof(double));
+	cr_assert_not_null(ptr, "ptr is NULL!");
+    *ptr = 320320320e-320;
+    cr_assert(*ptr == 320320320e-320, "sf_malloc failed to give proper space for an double!");
+    sf_free(ptr);
+
+    assert_free_block_count(0, 1);
+	assert_free_block_count(4048, 1);
+
+	cr_assert(sf_errno == 0, "sf_errno is not zero!");
+	cr_assert(sf_mem_start() + PAGE_SZ == sf_mem_end(), "Allocated more than necessary!");
+}
+
+Test(sf_memsuite_student, sf_malloc_and_free_long_double, .init = sf_mem_init, .fini = sf_mem_fini){
+	long double* ptr = sf_malloc(sizeof(long double));
+    long double* ptr2 = sf_malloc(sizeof(long double));
+
+	cr_assert_not_null(ptr, "ptr is NULL!");
+	cr_assert_not_null(ptr2, "ptr2 is NULL!");
+
+    *ptr = 0.333333333333333333L;
+    *ptr2 = 0.6666666666666666666L;
+    cr_assert(*ptr == 0.333333333333333333L, "sf_malloc failed to give proper space for an long double!");
+    cr_assert(*ptr2 == 0.6666666666666666666L, "sf_malloc failed to give proper space for an long double!");
+
+    sf_free(ptr);
+
+    assert_free_block_count(2, 0);
+	assert_free_block_count(3984, 1);
+
+	cr_assert(sf_errno == 0, "sf_errno is not zero!");
+	cr_assert(sf_mem_start() + PAGE_SZ == sf_mem_end(), "Allocated more than necessary!");
+}

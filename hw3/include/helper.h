@@ -1,10 +1,15 @@
 #include <stdio.h>
 #ifndef HELPER_H
 #define HELPER_H
+#endif
+#ifndef SFMM_H
+#define SFMM_H
+#endif
 
 #define M 32
 int calledBefore = 0;
 int usedSpace = 0;
+int did_coalesce = 0;
 int write_prologue();
 int write_epilogue();
 int add_first_block(size_t size);
@@ -15,9 +20,3 @@ void add_to_free_list(int size, void* add);
 int roundTo16(int num, int mul);
 int getIndexFromSize(int size);
 void coalesce(void *pp, sf_footer foot, sf_header head, int flag);
-
-#endif
-#ifndef SFMM_H
-#define SFMM_H
-#endif
-

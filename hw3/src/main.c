@@ -4,13 +4,13 @@
 int main(int argc, char const *argv[]) {
     sf_mem_init();
 
-    // double* ptr = sf_malloc(sizeof(double));
-    // double* ptr2 = sf_malloc(sizeof(double));
-    // *ptr = 320320320e-320;
-
+    long double* ptr = sf_malloc(sizeof(long double));
+    long double* ptr2 = sf_malloc(sizeof(long double));
+    *ptr = 0.333333333333333333L;
+    *ptr2 = 0.6666666666666666666L;
     // printf("%f\n%f\n", *ptr, *ptr2);
 
-    // sf_free(ptr);
+    sf_free(ptr);
     // sf_show_heap();
     // sf_mem_fini();
 
@@ -45,11 +45,11 @@ int main(int argc, char const *argv[]) {
     // sf_show_blocks();
     // sf_show_free_lists();
 
-    void *x = sf_malloc(sizeof(int) * 8);
-    void *y = sf_realloc(x, sizeof(char));
-    if(y == NULL){
+    // void *x = sf_malloc(sizeof(int) * 8);
+    // void *y = sf_realloc(x, sizeof(char));
+    // if(y == NULL){
 
-    }
+    // }
     sf_show_heap();
     sf_mem_fini();
 
