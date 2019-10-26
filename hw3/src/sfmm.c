@@ -406,7 +406,6 @@ void sf_free(void *pp) {
     else{
         coalesce(pp, foot, head, 2);
         if(did_coalesce == 0){
-
             coalesce(pp, foot, head, 1);
             if(did_coalesce == 0){
                 coalesce(pp, foot, head, 0);
