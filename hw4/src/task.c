@@ -191,9 +191,11 @@ static char *parse_path(char **linep) {
     char *pp = *linep;
     while(**linep != '\0' && !isspace(**linep) && !ISDELIM(**linep))
 	(*linep)++;
-    if(**linep != '\0')
-	*(*linep++) = '\0';
-    return strdup(pp);
+    char c = **linep;
+    **linep = '\0';
+    pp = strdup(pp);
+    **linep = c;
+    return pp;
 }
 
 static void parse_redirection(PIPELINE *pp, char **linep) {
