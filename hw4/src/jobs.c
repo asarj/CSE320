@@ -6,6 +6,7 @@
 
 #include "jobber.h"
 #include "task.h"
+#include "helper.h"
 
 int jobs_init(void) {
     // TO BE IMPLEMENTED
