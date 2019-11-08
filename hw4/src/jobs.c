@@ -9,7 +9,36 @@
 #include "task.h"
 #include "helper.h"
 
-int check_misc_cmd(char *input){
+char* replace_char_with_no_space(char *input, char c){
+    char *newInput = malloc(sizeof(input));
+    if(input == NULL || strlen(input) == 0)
+        return NULL;
+    int i = 0;
+    int j = 0;
+    while(input[i] != '\0'){
+        if(input[i] == c){
+            i++;
+        }
+        else{
+            newInput[j++] = input[i++];
+        }
+    }
+    newInput[j] = '\0';
+    return newInput;
+}
+
+char* substring(char *input, int begin, char end){
+    char *newInput = malloc(sizeof(input));
+    int i = begin;
+    int j = 0;
+    while(input[i] != end){
+        newInput[j++] = input[i++];
+    }
+    newInput[j] = '\0';
+    return newInput;
+}
+
+int parse(char *input){
     if(strcmp("quit", input) == 0){
         // TODO expunge table
         exit(EXIT_SUCCESS);
@@ -30,50 +59,52 @@ int check_misc_cmd(char *input){
             );
         return 1;
     }
-    return 0;
-}
+    else if(strcmp("enable", input) == 0){
 
-int check_info_cmd(char *input){
-    if(strcmp("status", input) == 0){
-        // TODO
-        return 1;
-    }
-    else if(strcmp("jobs", input) == 0){
-        // TODO
-        return 1;
-    }
-    return 0;
-}
-int check_sys_cmd(char *input){
-    if(strcmp("enable", input) == 0){
-        // TODO
         return 1;
     }
     else if(strcmp("disable", input) == 0){
-        // TODO
+
         return 1;
     }
-    return 0;
-}
-int check_spool_cmd(char *input){
-    if(strcmp("spool", input) == 0){
-        // TODO
+    /*It's not a one word command, so we will need to break it up*/
+    char *first = substring(input, 0, ' ');
+    char *pipe = replace_char_with_no_space(strstr(input, "\'"), '\'');
+    // debug("%s", pipe);
+
+    // debug("%s", first);
+
+    if(strcmp("status", first) == 0){
+        // debug("%s", pipe);
         return 1;
     }
-    else if(strcmp("pause", input) == 0){
-        // TODO
+    else if(strcmp("jobs", first) == 0){
+        // debug("%s", pipe);
         return 1;
     }
-    else if(strcmp("resume", input) == 0){
-        // TODO
+    else if(strcmp("spool", first) == 0){
+        // debug("%s", pipe);
+        TASK *t = parse_task(&pipe);
+        if(t == NULL){
+            /* handle it */
+        }
+
         return 1;
     }
-    else if(strcmp("cancel", input) == 0){
-        // TODO
+    else if(strcmp("pause", first) == 0){
+        // debug("%s", pipe);
         return 1;
     }
-    else if(strcmp("expunge", input) == 0){
-        // TODO
+    else if(strcmp("resume", first) == 0){
+        // debug("%s", pipe);
+        return 1;
+    }
+    else if(strcmp("cancel", first) == 0){
+        // debug("%s", pipe);
+        return 1;
+    }
+    else if(strcmp("expunge", first) == 0){
+        // debug("%s", pipe);
         return 1;
     }
     return 0;

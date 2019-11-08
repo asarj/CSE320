@@ -15,17 +15,8 @@ int main(int argc, char *argv[])
     while(1){
         char* input = sf_readline("jobber> ");
         debug("%s", input);
-        if(check_misc_cmd(input) == 1){
-            continue;
-        }
-        else if(check_info_cmd(input) == 1){
-            continue;
-        }
-        else if(check_sys_cmd(input) == 1){
-            continue;
-        }
-        else if(check_spool_cmd(input) == 1){
-            continue;
+        if(parse(input) == 1){
+            debug("success");
         }
 
 
