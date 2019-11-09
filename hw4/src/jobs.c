@@ -9,32 +9,58 @@
 #include "task.h"
 #include "helper.h"
 
-char* replace_char_with_no_space(char *input, char c){
-    char *newInput = malloc(sizeof(input));
-    if(input == NULL || strlen(input) == 0)
-        return NULL;
-    int i = 0;
-    int j = 0;
-    while(input[i] != '\0'){
-        if(input[i] == c){
-            i++;
-        }
-        else{
-            newInput[j++] = input[i++];
-        }
+int sf_suppress_chatter = 1;
+const char* map_status_to_str(JOB_STATUS j){
+    switch(j){
+        case NEW: return "NEW"; break;
+        case WAITING: return "WAITING"; break;
+        case RUNNING: return "RUNNING"; break;
+        case PAUSED: return "PAUSED"; break;
+        case CANCELED: return "CANCELLED"; break;
+        case COMPLETED: return "COMPLETED"; break;
+        case ABORTED: return "ABORTED"; break;
+        default: return "INVALID"; break;
     }
-    newInput[j] = '\0';
-    return newInput;
+}
+
+void print_jobs_table(){
+    for(int i = 0; i < MAX_JOBS; i++){
+        debug("JOB INDEX: %d", i);
+        debug("Status: %s", map_status_to_str(list_of_jobs[i].status));
+        debug("Job ID: %d", list_of_jobs[i].job_id);
+        debug("pid: %d", list_of_jobs[i].pid);
+    }
+}
+
+int search_free_slot(){
+    for(int i = 0; i < MAX_JOBS; i++){
+        if(list_of_jobs[i].status == -1)
+            return i;
+    }
+    return -1;
+}
+
+char* replace_char_with_no_space(char *input, char c){
+    char *current_pos = strchr(input, c);
+    while (current_pos){
+        *current_pos = ' ';
+        current_pos = strchr(current_pos, c);
+    }
+    return input;
 }
 
 char* substring(char *input, int begin, char end){
-    char *newInput = malloc(sizeof(input));
+    char *newInput = malloc(sizeof(char *));
     int i = begin;
     int j = 0;
     while(input[i] != end){
+        // debug("substring: %c", input[i]);
+        // debug("substring: %c", newInput[j]);
         newInput[j++] = input[i++];
     }
+
     newInput[j] = '\0';
+    debug("substring: %s", newInput);
     return newInput;
 }
 
@@ -59,7 +85,10 @@ int parse(char *input){
             );
         return 1;
     }
-    else if(strcmp("enable", input) == 0){
+
+    jobs_init();
+
+    if(strcmp("enable", input) == 0){
 
         return 1;
     }
@@ -70,7 +99,7 @@ int parse(char *input){
     /*It's not a one word command, so we will need to break it up*/
     char *first = substring(input, 0, ' ');
     char *pipe = replace_char_with_no_space(strstr(input, "\'"), '\'');
-    // debug("%s", pipe);
+    debug("%s", pipe);
 
     // debug("%s", first);
 
@@ -83,12 +112,51 @@ int parse(char *input){
         return 1;
     }
     else if(strcmp("spool", first) == 0){
-        // debug("%s", pipe);
+        debug("%s", pipe);
         TASK *t = parse_task(&pipe);
         if(t == NULL){
             /* handle it */
         }
+        // COMMAND cc = *t->pipelines->first->commands->first;
+        // while(cc != NULL){
+        //     debug("Start of commands");
+        //     while(cc.words->first != NULL){
+        //         debug("%s", cc.words->first);
+        //         cc.words->first = cc.words->rest->first;
+        //     }
+        //     cc.first = cc->rest->first;
+        // }
+        PIPELINE_LIST plist = *(t)->pipelines;
+        // while (plist.rest != NULL)
+        while(plist.first != NULL){
+            debug("Start of pipeline");
+            COMMAND_LIST clist = *plist.first->commands;
+            debug("Start of command list");
+            while(clist.first != NULL){
+                WORD_LIST wlist = *plist.first->commands->first->words;
+                debug("Start of word list");
+                while(wlist.first != NULL){
+                    debug("%s", wlist.first);
+                    if(wlist.rest == NULL)
+                        break;
+                    wlist = *wlist.rest;
+                }
+                if(clist.rest == NULL)
+                    break;
+                clist = *clist.rest;
+            }
+            if(plist.rest == NULL)
+                break;
+            plist = *plist.rest;
+        }
 
+        // struct job j;
+        // j.status = NEW;
+        // j.job_id = search_free_slot();
+        // j.pid = -1;
+        // list_of_jobs[j.job_id] = j;
+
+        // print_jobs_table();
         return 1;
     }
     else if(strcmp("pause", first) == 0){
@@ -112,11 +180,18 @@ int parse(char *input){
 
 int jobs_init(void) {
     // TO BE IMPLEMENTED
-    abort();
+    for(int i = 0; i < MAX_JOBS; i++){
+        list_of_jobs[i].status = -1;
+        list_of_jobs[i].job_id = -1;
+        list_of_jobs[i].task = NULL;
+        list_of_jobs[i].pid = -1;
+    }
+    return 1;
 }
 
 void jobs_fini(void) {
     // TO BE IMPLEMENTED
+    // stop all jobs and free all tasks
     abort();
 }
 

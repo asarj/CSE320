@@ -14,12 +14,10 @@ int main(int argc, char *argv[])
     // TO BE IMPLEMENTED
     while(1){
         char* input = sf_readline("jobber> ");
-        debug("%s", input);
-        if(parse(input) == 1){
+        // debug("%s", input);
+        if(parse(input) != 1){
             debug("success");
         }
-
-
     }
     exit(EXIT_FAILURE);
 }
