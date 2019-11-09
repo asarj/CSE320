@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include "jobber.h"
+
 #ifndef JOBBER_H
 #define JOBBER_H
 #endif
@@ -12,19 +13,17 @@ struct job{
     JOB_STATUS status;
     struct TASK *task;
     int job_id;
+    int num_tasks;
     pid_t pid; /* if running */
 };
 
 struct job list_of_jobs[MAX_JOBS];
 
-int check_misc_cmd(char *input);
-int check_info_cmd(char *input);
-int check_sys_cmd(char *input);
-int check_spool_cmd(char *input);
 int parse(char *input);
 char* replace_char_with_no_space(char *input, char c);
-char* substring(char *input, int begin, char end);
+char* substring(const char *input, int begin, char end);
 int search_free_slot();
+char* get_pipeline_command(struct PIPELINE *p);
 
 /* Debugging functions */
 void print_jobs_table();
