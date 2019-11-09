@@ -1,5 +1,3 @@
-#include "jobber.h"
-
 #ifndef JOBBER_H
 #define JOBBER_H
 #endif
@@ -23,6 +21,7 @@ int parse(char *input);
 char* replace_char_with_no_space(char *input, char c);
 char* substring(const char *input, int begin, char end);
 int search_free_slot();
+struct PIPELINE *p;
 char* get_pipeline_command(struct PIPELINE *p);
 
 /* Debugging functions */
