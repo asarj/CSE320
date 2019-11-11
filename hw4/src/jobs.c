@@ -9,7 +9,7 @@
 #include "task.h"
 #include "helper.h"
 
-int sf_suppress_chatter = 1;
+//int sf_suppress_chatter = 1;
 int enabled = 0; // disabled to begin;
 const char* map_status_to_str(JOB_STATUS j){
     switch(j){
@@ -226,6 +226,9 @@ int job_create(char *command) {
     j.pid = -1;
     j.num_tasks = 0;
     list_of_jobs[j.job_id] = j;
+    sf_job_create(j.job_id);
+//    debug("Job created");
+    sf_job_status_change(j.job_id, NEW, NEW);
 
     PIPELINE_LIST plist = *(t)->pipelines;
     while(plist.first != NULL){
@@ -233,8 +236,8 @@ int job_create(char *command) {
         debug("%s", pipe);
         j.num_tasks += 1;
         if(pipe == NULL){
-
         }
+        // Implement forking here
         if(plist.rest == NULL)
             break;
         plist = *plist.rest;
