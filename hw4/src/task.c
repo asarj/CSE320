@@ -52,6 +52,10 @@ static void free_command_list(COMMAND_LIST *clp) {
 
 static void free_pipeline(PIPELINE *pp) {
     free_command_list(pp->commands);
+    if(pp->input_path)
+	free(pp->input_path);
+    if(pp->output_path)
+	free(pp->output_path);
     free(pp);
 }
 
