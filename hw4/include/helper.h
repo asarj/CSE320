@@ -1,9 +1,5 @@
-#ifndef JOBBER_H
-#define JOBBER_H
-#endif
-#ifndef TASK_H
-#define TASK_H
-#endif
+#ifndef HELPER_H
+#define HELPER_H
 
 int enabled;
 
@@ -27,3 +23,5 @@ char* get_pipeline_command(struct PIPELINE *p);
 /* Debugging functions */
 void print_jobs_table();
 const char* map_status_to_str(JOB_STATUS j);
+
+#endif
