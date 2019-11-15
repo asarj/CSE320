@@ -3,6 +3,7 @@
 
 extern int enabled;
 extern int jobs_queued;
+extern int flag;
 
 struct job{
     JOB_STATUS status;
@@ -11,10 +12,10 @@ struct job{
     int job_id;
     pid_t pgid;
     pid_t pid; /* if running */
-};
+} *job;
 
-struct job list_of_jobs[MAX_JOBS];
-int runners[MAX_RUNNERS];
+struct job *list_of_jobs;
+int *runners;
 
 int parse(char *input);
 char* replace_char_with_no_space(char *input, char c);
@@ -25,9 +26,8 @@ struct PIPELINE *p;
 struct job *j;
 char* get_pipeline_command(struct PIPELINE *p);
 int run_procs();
-void sig_child_handler(int sig);
-void sig_segv_handler(int sig);
-void sig_abrt_handler(int sig);
+void handler(int sig);
+int signal_hook_func(void);
 
 /* Debugging functions */
 void print_jobs_table();

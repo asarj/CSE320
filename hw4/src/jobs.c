@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/mman.h>
 #include <wait.h>
 
 
@@ -14,24 +15,40 @@
 #include "helper.h"
 
 int jobs_init(void) {
-    if(signal(SIGCHLD, sig_child_handler) == SIG_ERR)
+    if(signal(SIGCHLD, handler) == SIG_ERR)
         abort();
 
-    if(signal(SIGSEGV, sig_segv_handler) == SIG_ERR)
-        abort();
-
-    if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR)
-        abort();
-
-
+    list_of_jobs = (struct job *)mmap(NULL, (sizeof list_of_jobs) * MAX_JOBS, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    runners = mmap(NULL, (sizeof runners) * MAX_RUNNERS, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     for(int i = 0; i < MAX_JOBS; i++){
         list_of_jobs[i].status = -1;
         list_of_jobs[i].job_id = -1;
-        list_of_jobs[i].cmd = NULL;
+//        list_of_jobs[i].cmd = malloc(sizeof(char *));
         list_of_jobs[i].task = NULL;
         list_of_jobs[i].pgid = -1;
         list_of_jobs[i].pid = -1;
     }
+
+    char* input;
+//    sf_set_readline_signal_hook();
+    while(1){
+        input = sf_readline("jobber> ");
+//        int l = 0;
+//        while (input[l] != NULL){
+            debug("%s", input);
+//        }
+        if(input == NULL){
+            exit(EXIT_SUCCESS);
+        }
+        // debug("%s", input);
+        if(parse(input) != 1){
+//            debug("success");
+//            printf("Unrecognized command: %s\n", input);
+//            free(input);
+        }
+        free(input);
+    }
+//    jobs_fini();
     return 1;
 }
 
@@ -62,8 +79,9 @@ int jobs_get_enabled() {
 }
 
 int job_create(char *command) {
-    if(command == NULL){
+    if(command == NULL || strlen(command) == 0){
         // kill later
+        exit(EXIT_SUCCESS);
     }
     int index = search_free_slot();
     if(index == -1){
@@ -72,7 +90,9 @@ int job_create(char *command) {
     struct job j;
     j.status = NEW;
     j.job_id = index;
-    j.cmd = malloc(strlen(command) + 1);
+    j.cmd = malloc(sizeof(char *) * strlen(command) + 1);
+//    j.cmd = command
+    strcpy(j.cmd, "");
     strcpy(j.cmd, command);
     j.pid = -1;
     j.pgid = 0;
@@ -89,13 +109,13 @@ int job_create(char *command) {
     j.status = WAITING;
     list_of_jobs[index] = j;
     jobs_queued++;
-//    if(jobs_get_enabled() == 0){
-//        return 1;
-//    }
-//    else{
+    if(jobs_get_enabled() == 0){
+        return 1;
+    }
+    else{
         run_procs();
         return 1;
-//    }
+    }
 
     // print_jobs_table();
     return 1;

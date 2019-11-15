@@ -11,31 +11,34 @@
 //int sf_suppress_chatter = 1;
 int enabled = 0;
 int jobs_queued = 0;
+int flag = 0;
 
-void sig_child_handler(int sig){
+void handler(int sig){
 //    int fds[2];
 //    int stat;
 //    pid_t pid;
-    sigset_t masks, prevs;
-    sigprocmask(SIG_SETMASK, &masks, &prevs);
-    debug("I am in the sigchld handler");
-    sigprocmask(SIG_SETMASK, &prevs, NULL);
-
+//    sigset_t masks, prevs;
+//    sigprocmask(SIG_SETMASK, &masks, &prevs);
+//    debug("I am in the sigchld handler");
+//    sigprocmask(SIG_SETMASK, &prevs, NULL);
+    flag = sig;
 }
 
-void sig_segv_handler(int sig){
+int signal_hook_func(void){
+    if(flag){
+        debug("I got caught in signal hook func");
+//        flag = 0;
 
-}
-
-void sig_abrt_handler(int sig){
-
+    }
+    flag = 0;
+    return 0;
 }
 
 int run_procs(){
     for(int i = 0; i < MAX_JOBS; i++){
-        if(list_of_jobs[i].task == NULL)
+        if(list_of_jobs[i].task == NULL || list_of_jobs[i].status == COMPLETED || list_of_jobs[i].status == ABORTED || list_of_jobs[i].status == PAUSED || list_of_jobs[i].status == CANCELED)
             continue;
-
+        j = &list_of_jobs[i];
         PIPELINE_LIST *plist = (list_of_jobs[i].task)->pipelines;
         char* input_path = malloc(sizeof(char*));
         char* output_path = malloc(sizeof(char*));
@@ -58,6 +61,8 @@ int run_procs(){
             COMMAND_LIST *cmds = p->commands;
             char **cmd = NULL;// malloc(sizeof(char *));
             int index  = 0;
+            int fds2[2];
+            pipe(fds2);
             while(cmds->first != NULL){
 //                debug("Start of command");
                 WORD_LIST *wlist = cmds->first->words;
@@ -79,52 +84,70 @@ int run_procs(){
                 if(cmd != NULL){
                     // Final command is in here
 //                    debug("%s\n", cmd);
+                    int ret;
                     int fds[2];
                     int stat;
                     pid_t pid;
                     int buff = 0;
-                    int prog_broken = -1;
-                    if(prog_broken == 0){
-
-                    }
+//                    int prog_broken = -1;
+//                    if(prog_broken == 0){
+//
+//                    }
                     pipe(fds);
-                    sigset_t prevs;
-//                    sigprocmask(SIG_SETMASK, &masks, &prevs);
+                    sigset_t masks, prevs;
+                    sigfillset(&masks);
+                    sigprocmask(SIG_SETMASK, &masks, &prevs);
                     pid = fork();
                     if(pid < 0){
                         // kill everything
                     }
                     else if(pid == 0){
                         // Entered child
+                        debug("%d", getpid());
                         if(cmds->rest == NULL)
-                            while(dup2(fds[1], STDOUT_FILENO)){}
+                            while(dup2(fds[1], STDOUT_FILENO) == -1){}
 
                         if(buff > 0){
-                            dup2(STDIN_FILENO, fds[1]);
+                            dup2(STDIN_FILENO, fds2[0]);
                         }
 
                         close(fds[0]);
                         close(fds[1]);
-                        debug("I am executing the program");
-                        execvp(cmd[0], cmd);
+                        debug("I am executing the program %s", *cmd);
+                        sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, RUNNING);
+                        list_of_jobs[i].status = RUNNING;
+
+                        ret = execvp(cmd[0], cmd);
                     }
                     else{
                         // Entered parent
                         setpgid(pid, getpid());
                         sigprocmask(SIG_SETMASK, &prevs, NULL);
-                        waitpid(pid, (int *) j->status, 0); // Check this
-                        close(fds[0]);
-                        close(fds[1]);
+                        debug("%d", pid);
+                        int status;
+                        waitpid(pid, &status, 0); // Check this
+
+                        close(fds2[0]);
+                        close(fds2[1]);
                         waitpid(pid, &stat, 0);
                         close(fds[0]);
                         close(fds[1]);
                         buff = read(fds[0], cmd, 3500);
                         pipe(fds);
                         write(fds[1], cmd, buff);
-                        close(fds[0]);
-                        close(fds[1]);
-                        if(stat == 1)
-                            prog_broken = 0;
+                        close(fds2[0]);
+                        close(fds2[1]);
+
+                        if(ret == -1){
+                            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, ABORTED);
+                            list_of_jobs[i].status = ABORTED;
+                        }
+                        else{
+                            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, COMPLETED);
+                            list_of_jobs[i].status = COMPLETED;
+                        }
+//                        if(stat == 1)
+//                            prog_broken = 0;
                     }
                 }
                 if(cmds->rest == NULL)
@@ -149,8 +172,8 @@ int run_procs(){
     return 1;
 }
 
-const char* map_status_to_str(JOB_STATUS j){
-    switch(j){
+const char* map_status_to_str(JOB_STATUS x){
+    switch(x){
         case NEW: return "NEW"; break;
         case WAITING: return "WAITING"; break;
         case RUNNING: return "RUNNING"; break;
@@ -206,15 +229,16 @@ char* replace_char_with_no_space(char *input, char c){
 
 char* substring(const char *input, int begin, char end){
     char *newInput = malloc(sizeof(char *));
+    strcpy(newInput, "");
     int i = begin;
-    int j = 0;
+    int k = 0;
     while(input[i] != end){
         // debug("substring: %c", input[i]);
-        // debug("substring: %c", newInput[j]);
-        newInput[j++] = input[i++];
+        // debug("substring: %c", newInput[k]);
+        newInput[k++] = input[i++];
     }
 
-    newInput[j] = '\0';
+    newInput[k] = '\0';
     debug("substring: %s", newInput);
     return newInput;
 }
@@ -261,11 +285,18 @@ char* get_pipeline_command(struct PIPELINE *p){
 }
 
 int parse(char *input){
+    int mul_args = 0;
+    if(strcmp("", input) == 0){
+        return 1;
+    }
     if(strcmp("quit", input) == 0){
         // TODO expunge table
         for(int i = 0; i < MAX_JOBS; i++){
             if(list_of_jobs[i].job_id != -1){
-                kill(list_of_jobs[i].pid, SIGKILL);
+                sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, ABORTED);
+                list_of_jobs[i].status = ABORTED;
+
+//                kill(list_of_jobs[i].pid, SIGKILL);
                 job_expunge(list_of_jobs[i].job_id);
             }
 
@@ -290,10 +321,12 @@ int parse(char *input){
     }
 
     if(strcmp("enable", input) == 0){
+//        debug("I am being enabled");
         int res = jobs_get_enabled();
+//        debug("Enabled flag: %d, res");
         if(res == 0){
             jobs_set_enabled(1);
-//            run_procs();
+            run_procs();
         }
         return 1;
     }
@@ -309,66 +342,72 @@ int parse(char *input){
         // debug("%s", pipe);
         for(int i = 0; i < MAX_JOBS; i++){
             if(list_of_jobs[i].job_id != -1)
-                printf("job %d [%s]:%s\n", list_of_jobs[i].job_id, map_status_to_str(list_of_jobs[i].status), list_of_jobs->cmd);
+                printf("job %d [%s]:%s\n", list_of_jobs[i].job_id, map_status_to_str(list_of_jobs[i].status), list_of_jobs[i].cmd);
         }
         return 1;
     }
+    mul_args = 1;
     /*It's not a one word command, so we will need to break it up*/
-    char *first = substring(input, 0, ' ');
+
 
     // debug("%s", first);
-
-    if(strcmp("status", first) == 0){
-        int str_start = strlen(first) + 1;
-        int second = (*substring(input, str_start, '\0') - '0');
-        if(list_of_jobs[second].job_id != -1){
-            printf("job %d [%s]:%s\n", list_of_jobs[second].job_id, map_status_to_str(list_of_jobs[second].status), list_of_jobs->cmd);
+    if(mul_args == 1){
+        char *first = substring(input, 0, ' ');
+        debug("%s", first);
+        if(strcmp("status", first) == 0){
+            int str_start = strlen(first) + 1;
+            int second = (*substring(input, str_start, '\0') - '0');
+            if(list_of_jobs[second].job_id != -1){
+                printf("job %d [%s]:%s\n", list_of_jobs[second].job_id, map_status_to_str(list_of_jobs[second].status), list_of_jobs->cmd);
+            }
+            debug("%d", second);
+            free(first);
+            return 1;
         }
-        debug("%d", second);
-        free(first);
-        return 1;
-    }
-    else if(strcmp("spool", first) == 0){
-        char *pipe = replace_char_with_no_space(strstr(input, "\'"), '\'');
-        debug("%s", pipe);
+        else if(strcmp("spool", first) == 0){
+            char *pipe = replace_char_with_no_space(strstr(input, "\'"), '\'');
+            debug("%s", pipe);
 
-        int res = job_create(pipe);
-        if(res == -1){
-            // handle it
-        }
+            int res = job_create(pipe);
+            if(res == -1){
+                // handle it
+            }
+            strcpy(pipe, "");
 //        free(pipe);
-        free(first);
-        return 1;
-    }
-    else if(strcmp("pause", first) == 0){
-        // debug("%s", pipe);
-        free(first);
-        return 1;
-    }
-    else if(strcmp("resume", first) == 0){
-        // debug("%s", pipe);
-        free(first);
-        return 1;
-    }
-    else if(strcmp("cancel", first) == 0){
-        // debug("%s", pipe);
-        free(first);
-        return 1;
-    }
-    else if(strcmp("expunge", first) == 0){
-        // debug("%s", pipe);
-        int str_start = strlen(first) + 1;
-        int second = (*substring(input, str_start, '\0') - '0');
-        if(list_of_jobs[second].job_id != -1){
-            job_expunge(second);
+            free(first);
+            return 1;
+        }
+        else if(strcmp("pause", first) == 0){
+            // debug("%s", pipe);
+            free(first);
+            return 1;
+        }
+        else if(strcmp("resume", first) == 0){
+            // debug("%s", pipe);
+            free(first);
+            return 1;
+        }
+        else if(strcmp("cancel", first) == 0){
+            // debug("%s", pipe);
+            free(first);
+            return 1;
+        }
+        else if(strcmp("expunge", first) == 0){
+            // debug("%s", pipe);
+            int str_start = strlen(first) + 1;
+            int second = (*substring(input, str_start, '\0') - '0');
+            if(list_of_jobs[second].job_id != -1){
+                job_expunge(second);
+            }
+            free(first);
+            return 1;
+        }
+        else{
+            printf("Unrecognized command: %s\n", input);
         }
         free(first);
-        return 1;
     }
-    else{
-        printf("Unrecognized command: %s\n", input);
-    }
-    free(first);
+
 //    free(input);
-    return 0;
+    return 1;
 }

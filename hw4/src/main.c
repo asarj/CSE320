@@ -12,19 +12,9 @@
 int main(int argc, char *argv[])
 {
     // TO BE IMPLEMENTED
+    sf_set_readline_signal_hook(signal_hook_func);
     jobs_init();
-    char* input;
-    while(1){
-        input = sf_readline("jobber> ");
-        // debug("%s", input);
-        if(parse(input) != 1){
-//            debug("success");
-//            printf("Unrecognized command: %s\n", input);
-//            free(input);
-        }
-        free(input);
-    }
-    jobs_fini();
+
 
     exit(EXIT_SUCCESS);
 }
