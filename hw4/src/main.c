@@ -12,14 +12,21 @@
 int main(int argc, char *argv[])
 {
     // TO BE IMPLEMENTED
+    jobs_init();
+    char* input;
     while(1){
-        char* input = sf_readline("jobber> ");
+        input = sf_readline("jobber> ");
         // debug("%s", input);
         if(parse(input) != 1){
-            debug("success");
+//            debug("success");
+//            printf("Unrecognized command: %s\n", input);
+//            free(input);
         }
+        free(input);
     }
-    exit(EXIT_FAILURE);
+    jobs_fini();
+
+    exit(EXIT_SUCCESS);
 }
 
 /*

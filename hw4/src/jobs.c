@@ -4,18 +4,32 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <wait.h>
+
 
 #include "jobber.h"
 #include "task.h"
 #include "helper.h"
 
 int jobs_init(void) {
-    // TO BE IMPLEMENTED
+    if(signal(SIGCHLD, sig_child_handler) == SIG_ERR)
+        abort();
+
+    if(signal(SIGSEGV, sig_segv_handler) == SIG_ERR)
+        abort();
+
+    if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR)
+        abort();
+
+
     for(int i = 0; i < MAX_JOBS; i++){
         list_of_jobs[i].status = -1;
         list_of_jobs[i].job_id = -1;
+        list_of_jobs[i].cmd = NULL;
         list_of_jobs[i].task = NULL;
-        list_of_jobs[i].num_tasks = -1;
+        list_of_jobs[i].pgid = -1;
         list_of_jobs[i].pid = -1;
     }
     return 1;
@@ -24,93 +38,87 @@ int jobs_init(void) {
 void jobs_fini(void) {
     // TO BE IMPLEMENTED
     // stop all jobs and free all tasks
-    abort();
+    for(int i = 0; i < MAX_JOBS; i++){
+        list_of_jobs[i].status = -1;
+        list_of_jobs[i].job_id = -1;
+        free_task(list_of_jobs[i].task);
+        free(list_of_jobs[i].cmd);
+        list_of_jobs[i].cmd = NULL;
+        list_of_jobs[i].task = NULL;
+        list_of_jobs[i].pgid = -1;
+        list_of_jobs[i].pid = -1;
+    }
+    exit(EXIT_SUCCESS);
 }
 
 int jobs_set_enabled(int val) {
-    // TO BE IMPLEMENTED
-    abort();
+    int prev = enabled;
+    enabled = val;
+    return prev;
 }
 
 int jobs_get_enabled() {
-    // TO BE IMPLEMENTED
-    abort();
+    return enabled;
 }
 
 int job_create(char *command) {
-    TASK *t = parse_task(&command);
-    if(t == NULL){
-        /* handle it */
+    if(command == NULL){
+        // kill later
     }
     int index = search_free_slot();
     if(index == -1){
-        // handle it
+        return -1;
     }
-
     struct job j;
     j.status = NEW;
     j.job_id = index;
-    j.task = t;
+    j.cmd = malloc(strlen(command) + 1);
+    strcpy(j.cmd, command);
     j.pid = -1;
-    j.num_tasks = 0;
-    list_of_jobs[j.job_id] = j;
+    j.pgid = 0;
+    TASK *t = parse_task(&command);
+    if(t == NULL){
+        /* handle it */
+        return -1;
+    }
+    j.task = t;
     sf_job_create(j.job_id);
 //    debug("Job created");
-//    sf_job_status_change(j.job_id, NEW, NEW);
 
-    PIPELINE_LIST *plist = (t)->pipelines;
-    while(plist->first != NULL){
-        PIPELINE *p = plist->first;
-        debug("Start of pipeline");
-        char* input_path = malloc(sizeof(char*));
-        char* output_path = malloc(sizeof(char*));
-        strcpy(input_path, "");
-        strcpy(output_path, "");
-
-        if(p->input_path != NULL){
-//            strcpy(input_path, p->input_path);
-            debug("%s", p->input_path);
-        }
-        if(p->output_path != NULL){
-//            strcpy(output_path, p->output_path);
-            debug("%s", p->output_path);
-        }
-
-        COMMAND_LIST *cmds = p->commands;
-
-        while(cmds->first != NULL){
-            debug("Start of command");
-            WORD_LIST *wlist = cmds->first->words;
-            while(wlist->first != NULL){
-                char *temp = wlist->first;
-//                strcat(cmd, temp);
-                    debug("%s", temp);
-                if(wlist->rest == NULL)
-                    break;
-//                strcat(cmd, " ");
-                wlist = wlist->rest;
-            }
-            if(cmds->rest == NULL)
-                break;
-            cmds = cmds->rest;
-        }
-        if(plist->rest == NULL){
-            free(input_path);
-            free(output_path);
-            break;
-        }
-
-        plist = plist->rest;
-
-    }
+    sf_job_status_change(j.job_id, j.status, WAITING);
+    j.status = WAITING;
+    list_of_jobs[index] = j;
+    jobs_queued++;
+//    if(jobs_get_enabled() == 0){
+//        return 1;
+//    }
+//    else{
+        run_procs();
+        return 1;
+//    }
 
     // print_jobs_table();
     return 1;
 }
 
 int job_expunge(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(job_get_status(jobid) == ABORTED || job_get_status(jobid) == COMPLETED){
+        list_of_jobs[jobid].status = -1;
+        list_of_jobs[jobid].job_id = -1;
+        free(list_of_jobs[jobid].cmd);
+        list_of_jobs[jobid].cmd = NULL;
+        free_task(list_of_jobs[jobid].task);
+        list_of_jobs[jobid].task = NULL;
+        list_of_jobs[jobid].pgid = -1;
+        list_of_jobs[jobid].pid = -1;
+        coalesce_job_table();
+        jobs_queued--;
+        sf_job_expunge(jobid);
+        coalesce_job_table();
+        return 0;
+    }
+    printf("Error: expunge\n");
+    return -1;
 }
 
 int job_cancel(int jobid) {
@@ -130,17 +138,27 @@ int job_resume(int jobid) {
 
 int job_get_pgid(int jobid) {
     // TO BE IMPLEMENTED
-    abort();
+    if(job_get_status(jobid) == RUNNING || job_get_status(jobid) == PAUSED || job_get_status(CANCELED)){
+        return list_of_jobs[jobid].pgid;
+    }
+    return -1;
 }
 
 JOB_STATUS job_get_status(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].job_id != -1){
+        return list_of_jobs[jobid].status;
+    }
+    return -1;
 }
 
 int job_get_result(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(job_get_status(jobid) == COMPLETED){
+        int stat;
+        if(waitpid(list_of_jobs[jobid].pid, &stat, WNOHANG) == -1)
+            return -1;
+        return stat;
+    }
+    return -1;
 }
 
 int job_was_canceled(int jobid) {
@@ -149,6 +167,8 @@ int job_was_canceled(int jobid) {
 }
 
 char *job_get_taskspec(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].job_id != -1){
+        return list_of_jobs[jobid].cmd;
+    }
+    return NULL;
 }
