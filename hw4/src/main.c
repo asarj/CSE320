@@ -12,7 +12,6 @@
 int main(int argc, char *argv[])
 {
     // TO BE IMPLEMENTED
-    sf_set_readline_signal_hook(signal_hook_func);
     jobs_init();
 
 

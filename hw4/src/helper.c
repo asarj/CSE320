@@ -12,6 +12,7 @@
 int enabled = 0;
 int jobs_queued = 0;
 int flag = 0;
+int runners_queued = 0;
 
 void handler(int sig){
 //    int fds[2];
@@ -26,7 +27,7 @@ void handler(int sig){
 
 int signal_hook_func(void){
     if(flag){
-        debug("I got caught in signal hook func");
+        debug("I got caught in signal hook func %d", flag);
 //        flag = 0;
 
     }
@@ -201,6 +202,22 @@ void coalesce_job_table(){
     }
 }
 
+void coalesce_runner_table(){
+    int i = 0;
+    int k = 0;
+    while(k < runners_queued){
+        if(runners[i] != -1){
+            if(i < k){
+                pid_t temp = runners[i];
+                runners[i] = runners[k];
+                runners[k] = temp;
+            }
+            i++;
+        }
+        k++;
+    }
+}
+
 void print_jobs_table(){
     for(int i = 0; i < MAX_JOBS; i++){
         debug("JOB INDEX: %d", i);
@@ -213,6 +230,14 @@ void print_jobs_table(){
 int search_free_slot(){
     for(int i = 0; i < MAX_JOBS; i++){
         if(list_of_jobs[i].status == -1)
+            return i;
+    }
+    return -1;
+}
+
+int search_runner_slot(){
+    for(int i = 0; i < MAX_RUNNERS; i++){
+        if(runners[i] == -1)
             return i;
     }
     return -1;

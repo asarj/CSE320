@@ -15,6 +15,8 @@
 #include "helper.h"
 
 int jobs_init(void) {
+    sf_set_readline_signal_hook(signal_hook_func);
+
     if(signal(SIGCHLD, handler) == SIG_ERR)
         abort();
 
@@ -27,6 +29,9 @@ int jobs_init(void) {
         list_of_jobs[i].task = NULL;
         list_of_jobs[i].pgid = -1;
         list_of_jobs[i].pid = -1;
+    }
+    for(int i = 0; i < MAX_RUNNERS; i++){
+        runners[i] = -1;
     }
 
     char* input;
