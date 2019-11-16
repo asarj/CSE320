@@ -36,6 +36,7 @@ int signal_hook_func(void){
 }
 
 int run_procs(){
+
     for(int i = 0; i < MAX_JOBS; i++){
         if(list_of_jobs[i].task == NULL || list_of_jobs[i].status == COMPLETED || list_of_jobs[i].status == ABORTED || list_of_jobs[i].status == PAUSED || list_of_jobs[i].status == CANCELED)
             continue;
@@ -133,9 +134,9 @@ int run_procs(){
                         waitpid(pid, &stat, 0);
                         close(fds[0]);
                         close(fds[1]);
-                        buff = read(fds[0], cmd, 3500);
+//                        buff = read(fds[0], cmd, 3500);
                         pipe(fds);
-                        write(fds[1], cmd, buff);
+//                        write(fds[1], cmd, buff);
                         close(fds2[0]);
                         close(fds2[1]);
 
