@@ -16,19 +16,13 @@ int flag = 0;
 int* runners_queued = 0;
 
 void handler(int sig){
-    sigset_t m, pr;
-    sigfillset(&m);
-    sigprocmask(SIG_SETMASK, &m, &pr);
+//    sigset_t m, pr;
+//    sigfillset(&m);
+//    sigprocmask(SIG_SETMASK, &m, &pr);
     // insert stuff
-    sigprocmask(SIG_SETMASK, &pr, NULL);
-//    int fds[2];
-//    int stat;
-//    pid_t pid;
-//    sigset_t masks, prevs;
-//    sigprocmask(SIG_SETMASK, &masks, &prevs);
-//    debug("I am in the sigchld handler");
-//    sigprocmask(SIG_SETMASK, &prevs, NULL);
+//    sigprocmask(SIG_SETMASK, &pr, NULL);
     flag = sig;
+    debug(sig);
     if(sig == SIGINT){
         jobs_set_enabled(0);
         jobs_fini();
@@ -50,7 +44,9 @@ void handler(int sig){
 
                         waitpid(getpid(), &status, WNOHANG);
 
-                        sigprocmask(SIG_SETMASK, &pr, NULL);
+//                        sigset_t ma, pre;
+                        sigfillset(&m);
+                        sigprocmask(SIG_SETMASK, &m, &pr);
                         sf_job_end(k, getpid(), status);
                         int stat_enum = COMPLETED;
                         if(status < 0){
@@ -85,6 +81,9 @@ int run_procs(){
     for(int i = 0; i < MAX_JOBS; i++){
         if(list_of_jobs[i].task == NULL || list_of_jobs[i].status == COMPLETED || list_of_jobs[i].status == ABORTED || list_of_jobs[i].status == PAUSED || list_of_jobs[i].status == CANCELED)
             continue;
+//            sigset_t m, pr;
+//            sigfillset(&m);
+//            sigprocmask(SIG_SETMASK, &m, &pr);
         pid_t start_fork = fork();
         if(start_fork == 0){
             if(*runners_queued >= MAX_RUNNERS){
@@ -144,7 +143,7 @@ int run_procs(){
                     cmd = NULL;
                     while(wlist->first != NULL){
                         char *temp = wlist->first;
-                        debug("%s", temp);
+//                        debug("%s", temp);
                         cmd = (char**)realloc(cmd, (index + 1) * sizeof(char*));
                         cmd[index] = temp;
                         index++;
@@ -550,16 +549,17 @@ int parse(char *input){
     }
     if(strcmp("quit", input) == 0){
         // TODO expunge table
-        for(int i = 0; i < MAX_JOBS; i++){
-            if(list_of_jobs[i].job_id != -1){
-                sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, ABORTED);
-                list_of_jobs[i].status = ABORTED;
-
-//                kill(list_of_jobs[i].pid, SIGKILL);
-                job_expunge(list_of_jobs[i].job_id);
-            }
-
-        }
+//        for(int i = 0; i < MAX_JOBS; i++){
+//            if(list_of_jobs[i].job_id != -1){
+//                sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, ABORTED);
+//                list_of_jobs[i].status = ABORTED;
+//
+////                kill(list_of_jobs[i].pid, SIGKILL);
+//                job_expunge(list_of_jobs[i].job_id);
+//            }
+//
+//        }
+        jobs_fini();
         exit(EXIT_SUCCESS);
     }
     else if(strcmp("help", input) == 0){
@@ -674,6 +674,7 @@ int parse(char *input){
         else if(strcmp("expunge", first) == 0){
             int str_start = strlen(first) + 1;
             int second = (*substring(input, str_start, '\0') - '0');
+//            debug("%d", second);
             if(list_of_jobs[second].job_id != -1){
                 job_expunge(second);
             }

@@ -108,6 +108,7 @@ int job_create(char *command) {
 
 int job_expunge(int jobid) {
     if(job_get_status(jobid) == ABORTED || job_get_status(jobid) == COMPLETED){
+        sf_job_expunge(list_of_jobs[jobid].job_id);
         list_of_jobs[jobid].status = -1;
         list_of_jobs[jobid].job_id = -1;
         free(list_of_jobs[jobid].cmd);
