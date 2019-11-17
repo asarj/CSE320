@@ -486,17 +486,19 @@ char* replace_char_with_no_space(char *input, char c){
 }
 
 char* substring(const char *input, int begin, char end){
-    char *newInput = malloc(sizeof(char *));
+    char *newInput = (char *)malloc(sizeof(char) * strlen(input) + 1);
     strcpy(newInput, "");
     int i = begin;
     int k = 0;
     while(input[i] != end){
         // debug("substring: %c", input[i]);
         // debug("substring: %c", newInput[k]);
-        newInput[k++] = input[i++];
+        if(input[i] == '\0')
+            break;
+        *(newInput + k++) = *(input + i++);
     }
 
-    newInput[k] = '\0';
+    *(newInput + k) = '\0';
 //    debug("substring: %s", newInput);
     return newInput;
 }
@@ -614,11 +616,13 @@ int parse(char *input){
 //        debug("%s", first);
         if(strcmp("status", first) == 0){
             int str_start = strlen(first) + 1;
-            int second = (*substring(input, str_start, '\0') - '0');
+            char* str = substring(input, str_start, '\0');
+            int second = (*str - '0');
             if(list_of_jobs[second].job_id != -1){
                 printf("job %d [%s]:%s\n", list_of_jobs[second].job_id, map_status_to_str(list_of_jobs[second].status), list_of_jobs->cmd);
             }
 //            debug("%d", second);
+            free(str);
             free(first);
             return 1;
         }

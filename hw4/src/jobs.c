@@ -52,10 +52,12 @@ int jobs_init(void) {
 void jobs_fini(void) {
     // stop all jobs and free all tasks
     for(int i = 0; i < MAX_JOBS; i++){
-        job_cancel(list_of_jobs[i].job_id);
+        if(list_of_jobs[i].job_id != -1)
+            job_cancel(list_of_jobs[i].job_id);
     }
     for(int i = 0; i < MAX_JOBS; i++){
-        job_expunge(list_of_jobs[i].job_id);
+        if(list_of_jobs[i].job_id != -1)
+            job_expunge(list_of_jobs[i].job_id);
     }
 
     exit(EXIT_SUCCESS);
@@ -123,7 +125,7 @@ int job_expunge(int jobid) {
         coalesce_job_table();
         return 0;
     }
-    printf("Error: expunge\n");
+//    printf("Error: expunge\n");
     return -1;
 }
 
