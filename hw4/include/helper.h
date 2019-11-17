@@ -4,7 +4,7 @@
 extern int* enabled;
 extern int* jobs_queued;
 extern int* runners_queued;
-extern int flag;
+volatile __sig_atomic_t flag;
 
 struct job{
     JOB_STATUS status;

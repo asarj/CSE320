@@ -12,7 +12,7 @@
 //int sf_suppress_chatter = 1;
 int* enabled = 0;
 int* jobs_queued = 0;
-int flag = 0;
+volatile sig_atomic_t flag = 0;
 int* runners_queued = 0;
 
 void handler(int sig){
@@ -22,7 +22,7 @@ void handler(int sig){
     // insert stuff
 //    sigprocmask(SIG_SETMASK, &pr, NULL);
     flag = sig;
-    debug(sig);
+    debug("%d", sig);
     if(sig == SIGINT){
         jobs_set_enabled(0);
         jobs_fini();
@@ -103,9 +103,9 @@ int run_procs(){
             list_of_jobs[i].status = RUNNING;
             runners[ret] = getpid();
             (*runners_queued)++;
+            j = &list_of_jobs[i];
             sigprocmask(SIG_SETMASK, &prevs, NULL);
 
-            j = &list_of_jobs[i];
             PIPELINE_LIST *plist = (list_of_jobs[i].task)->pipelines;
             char* input_path = malloc(sizeof(char*));
             char* output_path = malloc(sizeof(char*));
