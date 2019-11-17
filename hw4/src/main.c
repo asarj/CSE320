@@ -14,6 +14,17 @@ int main(int argc, char *argv[])
     // TO BE IMPLEMENTED
     jobs_init();
 
+    char* input;
+    while(1){
+        input = sf_readline("jobber> ");
+        if(input == NULL){
+            exit(EXIT_SUCCESS);
+        }
+        if(parse(input) != 1){
+
+        }
+        free(input);
+    }
 
     exit(EXIT_SUCCESS);
 }

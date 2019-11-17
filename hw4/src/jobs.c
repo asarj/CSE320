@@ -19,9 +19,22 @@ int jobs_init(void) {
 
     if(signal(SIGCHLD, handler) == SIG_ERR)
         abort();
+    if(signal(SIGINT, handler) == SIG_ERR)
+        abort();
+    if(signal(SIGABRT, handler) == SIG_ERR)
+        abort();
+    if(signal(SIGSEGV , handler) == SIG_ERR)
+        abort();
 
     list_of_jobs = (struct job *)mmap(NULL, (sizeof list_of_jobs) * MAX_JOBS, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    runners = mmap(NULL, (sizeof runners) * MAX_RUNNERS, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    runners = (pid_t*)mmap(NULL, (sizeof runners) * MAX_RUNNERS, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    jobs_queued = (int*)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    runners_queued = (int*)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    enabled = (int*)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    *jobs_queued = 0;
+    *runners_queued = 0;
+    *enabled = 0;
+
     for(int i = 0; i < MAX_JOBS; i++){
         list_of_jobs[i].status = -1;
         list_of_jobs[i].job_id = -1;
@@ -33,59 +46,33 @@ int jobs_init(void) {
     for(int i = 0; i < MAX_RUNNERS; i++){
         runners[i] = -1;
     }
-
-    char* input;
-//    sf_set_readline_signal_hook();
-    while(1){
-        input = sf_readline("jobber> ");
-//        int l = 0;
-//        while (input[l] != NULL){
-            debug("%s", input);
-//        }
-        if(input == NULL){
-            exit(EXIT_SUCCESS);
-        }
-        // debug("%s", input);
-        if(parse(input) != 1){
-//            debug("success");
-//            printf("Unrecognized command: %s\n", input);
-//            free(input);
-        }
-        free(input);
-    }
-//    jobs_fini();
-    return 1;
+    return 0;
 }
 
 void jobs_fini(void) {
-    // TO BE IMPLEMENTED
     // stop all jobs and free all tasks
     for(int i = 0; i < MAX_JOBS; i++){
-        list_of_jobs[i].status = -1;
-        list_of_jobs[i].job_id = -1;
-        free_task(list_of_jobs[i].task);
-        free(list_of_jobs[i].cmd);
-        list_of_jobs[i].cmd = NULL;
-        list_of_jobs[i].task = NULL;
-        list_of_jobs[i].pgid = -1;
-        list_of_jobs[i].pid = -1;
+        job_cancel(list_of_jobs[i].job_id);
     }
+    for(int i = 0; i < MAX_JOBS; i++){
+        job_expunge(list_of_jobs[i].job_id);
+    }
+
     exit(EXIT_SUCCESS);
 }
 
 int jobs_set_enabled(int val) {
-    int prev = enabled;
-    enabled = val;
+    int prev = *enabled;
+    *enabled = val;
     return prev;
 }
 
 int jobs_get_enabled() {
-    return enabled;
+    return *enabled;
 }
 
 int job_create(char *command) {
     if(command == NULL || strlen(command) == 0){
-        // kill later
         exit(EXIT_SUCCESS);
     }
     int index = search_free_slot();
@@ -96,11 +83,12 @@ int job_create(char *command) {
     j.status = NEW;
     j.job_id = index;
     j.cmd = malloc(sizeof(char *) * strlen(command) + 1);
+    if(j.cmd == NULL)
+        return -1;
 //    j.cmd = command
     strcpy(j.cmd, "");
     strcpy(j.cmd, command);
     j.pid = -1;
-    j.pgid = 0;
     TASK *t = parse_task(&command);
     if(t == NULL){
         /* handle it */
@@ -108,22 +96,14 @@ int job_create(char *command) {
     }
     j.task = t;
     sf_job_create(j.job_id);
-//    debug("Job created");
-
     sf_job_status_change(j.job_id, j.status, WAITING);
     j.status = WAITING;
     list_of_jobs[index] = j;
     jobs_queued++;
-    if(jobs_get_enabled() == 0){
-        return 1;
-    }
-    else{
+    if(jobs_get_enabled()) {
         run_procs();
-        return 1;
     }
-
-    // print_jobs_table();
-    return 1;
+    return j.job_id;
 }
 
 int job_expunge(int jobid) {
@@ -136,9 +116,9 @@ int job_expunge(int jobid) {
         list_of_jobs[jobid].task = NULL;
         list_of_jobs[jobid].pgid = -1;
         list_of_jobs[jobid].pid = -1;
-        coalesce_job_table();
-        jobs_queued--;
-        sf_job_expunge(jobid);
+//        coalesce_job_table();
+        (*jobs_queued) -= 1;
+//        sf_job_expunge(jobid);
         coalesce_job_table();
         return 0;
     }
@@ -148,21 +128,74 @@ int job_expunge(int jobid) {
 
 int job_cancel(int jobid) {
     // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].status == WAITING || list_of_jobs[jobid].status == RUNNING || list_of_jobs[jobid].status == PAUSED){
+
+        sigset_t m, pr;
+        sigfillset(&m);
+        sigprocmask(SIG_SETMASK, &m, &pr);
+        sf_job_status_change(jobid, list_of_jobs[jobid].status, CANCELED);
+        list_of_jobs[jobid].status = CANCELED;
+        sigprocmask(SIG_SETMASK, &pr, NULL);
+
+        if(list_of_jobs[jobid].status != WAITING){
+            killpg(list_of_jobs[jobid].pid, SIGKILL);
+
+            sigset_t ma, pre;
+            sigfillset(&m);
+            sigprocmask(SIG_SETMASK, &ma, &pre);
+            sf_job_end(jobid, list_of_jobs[jobid].pgid, SIGKILL);
+            sf_job_status_change(jobid, list_of_jobs[jobid].status, ABORTED);
+            list_of_jobs[jobid].status = ABORTED;
+
+
+            for(int i = 0; i < MAX_RUNNERS; i++){
+                if(runners[i] == list_of_jobs[jobid].pid){
+                    *(runners_queued) -= 1;
+                    runners[i] = -1;
+                    coalesce_runner_table();
+                    break;
+                }
+            }
+            sigprocmask(SIG_SETMASK, &pre, NULL);
+        }
+        return 0;
+    }
+    return -1;
 }
 
 int job_pause(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].status == RUNNING){
+        killpg(list_of_jobs[jobid].pid, SIGSTOP);
+
+        sigset_t m, pr;
+        sigfillset(&m);
+        sigprocmask(SIG_SETMASK, &m, &pr);
+        sf_job_status_change(jobid, list_of_jobs[jobid].status, PAUSED);
+        list_of_jobs[jobid].status = PAUSED;
+        sigprocmask(SIG_SETMASK, &pr, NULL);
+
+        return 0;
+    }
+    return -1;
 }
 
 int job_resume(int jobid) {
-    // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].status == PAUSED){
+        killpg(list_of_jobs[jobid].pid, SIGCONT);
+
+        sigset_t m, pr;
+        sigfillset(&m);
+        sigprocmask(SIG_SETMASK, &m, &pr);
+        sf_job_status_change(jobid, list_of_jobs[jobid].status, RUNNING);
+        list_of_jobs[jobid].status = RUNNING;
+        sigprocmask(SIG_SETMASK, &pr, NULL);
+        run_procs_from_index(list_of_jobs[jobid].job_id);
+        return 0;
+    }
+    return -1;
 }
 
 int job_get_pgid(int jobid) {
-    // TO BE IMPLEMENTED
     if(job_get_status(jobid) == RUNNING || job_get_status(jobid) == PAUSED || job_get_status(CANCELED)){
         return list_of_jobs[jobid].pgid;
     }
@@ -188,7 +221,9 @@ int job_get_result(int jobid) {
 
 int job_was_canceled(int jobid) {
     // TO BE IMPLEMENTED
-    abort();
+    if(list_of_jobs[jobid].job_id != -1 && list_of_jobs[jobid].status == ABORTED)
+        return 1;
+    return 0;
 }
 
 char *job_get_taskspec(int jobid) {

@@ -7,14 +7,20 @@
 #include <signal.h>
 #include <unistd.h>
 #include <wait.h>
+#include <fcntl.h>
 
 //int sf_suppress_chatter = 1;
-int enabled = 0;
-int jobs_queued = 0;
+int* enabled = 0;
+int* jobs_queued = 0;
 int flag = 0;
-int runners_queued = 0;
+int* runners_queued = 0;
 
 void handler(int sig){
+    sigset_t m, pr;
+    sigfillset(&m);
+    sigprocmask(SIG_SETMASK, &m, &pr);
+    // insert stuff
+    sigprocmask(SIG_SETMASK, &pr, NULL);
 //    int fds[2];
 //    int stat;
 //    pid_t pid;
@@ -23,15 +29,54 @@ void handler(int sig){
 //    debug("I am in the sigchld handler");
 //    sigprocmask(SIG_SETMASK, &prevs, NULL);
     flag = sig;
+    if(sig == SIGINT){
+        jobs_set_enabled(0);
+        jobs_fini();
+    }
+    else{
+        for(int i = 0; i < MAX_RUNNERS; i++){
+            if(runners[i] == getpid()){
+                debug("I found the runner of %d", getpid());
+                for(int k = 0; k < MAX_JOBS; k++){
+                    if(list_of_jobs[k].pid == getpid() && list_of_jobs[k].pgid == 1){
+                        sigset_t m, pr;
+                        sigfillset(&m);
+                        sigprocmask(SIG_SETMASK, &m, &pr);
+                        runners[i] = -1;
+                        coalesce_runner_table();
+                        (*runners_queued)--;
+                        int status = 0;
+                        sigprocmask(SIG_SETMASK, &pr, NULL);
+
+                        waitpid(getpid(), &status, WNOHANG);
+
+                        sigprocmask(SIG_SETMASK, &pr, NULL);
+                        sf_job_end(k, getpid(), status);
+                        int stat_enum = COMPLETED;
+                        if(status < 0){
+                            stat_enum = ABORTED;
+                        }
+                        sf_job_status_change(k, list_of_jobs[k].status, stat_enum);
+                        list_of_jobs[k].status = stat_enum;
+                        sigprocmask(SIG_SETMASK, &pr, NULL);
+                        break;
+                    }
+                }
+
+                break;
+            }
+        }
+    }
+
 }
 
 int signal_hook_func(void){
-    if(flag){
-        debug("I got caught in signal hook func %d", flag);
-//        flag = 0;
-
-    }
-    flag = 0;
+//    if(flag){
+//        debug("I got caught in signal hook func %d", flag);
+////        flag = 0;
+//
+//    }
+//    flag = 0;
     return 0;
 }
 
@@ -40,136 +85,324 @@ int run_procs(){
     for(int i = 0; i < MAX_JOBS; i++){
         if(list_of_jobs[i].task == NULL || list_of_jobs[i].status == COMPLETED || list_of_jobs[i].status == ABORTED || list_of_jobs[i].status == PAUSED || list_of_jobs[i].status == CANCELED)
             continue;
-        j = &list_of_jobs[i];
-        PIPELINE_LIST *plist = (list_of_jobs[i].task)->pipelines;
-        char* input_path = malloc(sizeof(char*));
-        char* output_path = malloc(sizeof(char*));
-
-        while(plist->first != NULL){
-            PIPELINE *p = plist->first;
-//            debug("Start of pipeline");
-            strcpy(input_path, "");
-            strcpy(output_path, "");
-
-            if(p->input_path != NULL){
-                strcpy(input_path, p->input_path);
-                debug("%s", p->input_path);
+        pid_t start_fork = fork();
+        if(start_fork == 0){
+            if(*runners_queued >= MAX_RUNNERS){
+                sleep(10);
             }
-            if(p->output_path != NULL){
-                strcpy(output_path, p->output_path);
-                debug("%s", p->output_path);
-            }
+            int ret = search_runner_slot();
+            if(ret == -1)
+                return -1;
+            list_of_jobs[i].pid = getpid();
+            setpgid(getpid(), getpid());
 
-            COMMAND_LIST *cmds = p->commands;
-            char **cmd = NULL;// malloc(sizeof(char *));
-            int index  = 0;
-            int fds2[2];
-            pipe(fds2);
-            while(cmds->first != NULL){
-//                debug("Start of command");
-                WORD_LIST *wlist = cmds->first->words;
-//                strcpy(cmd, "");
-                while(wlist->first != NULL){
-                    char *temp = wlist->first;
-//                    strcat(cmd, temp);
-//                    debug("%s", temp);
-                    cmd = (char**)realloc(cmd, (index + 1) * sizeof(char*));
-                    cmd[index] = temp;
-                    index++;
-                    if(wlist->rest == NULL)
-                        break;
-//                    strcat(cmd, " ");
-                    wlist = wlist->rest;
+            sigset_t masks, prevs;
+            sigfillset(&masks);
+            sigprocmask(SIG_SETMASK, &masks, &prevs);
+            sf_job_start(list_of_jobs[i].job_id, list_of_jobs[i].pgid);
+            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, RUNNING);
+            list_of_jobs[i].status = RUNNING;
+            runners[ret] = getpid();
+            (*runners_queued)++;
+            sigprocmask(SIG_SETMASK, &prevs, NULL);
+
+            j = &list_of_jobs[i];
+            PIPELINE_LIST *plist = (list_of_jobs[i].task)->pipelines;
+            char* input_path = malloc(sizeof(char*));
+            char* output_path = malloc(sizeof(char*));
+            pid_t pid;
+
+            while(plist->first != NULL){
+                int pipe_arr[2];
+                pipe(pipe_arr);
+                int pipe_int = 0;
+                PIPELINE *p = plist->first;
+                int f_out = - 1;
+                int f_in = -1;
+
+                strcpy(input_path, "");
+                strcpy(output_path, "");
+
+                if(p->input_path != NULL){
+                    strcpy(input_path, p->input_path);
+//                    debug("%s", p->input_path);
+                    f_in = open(p->input_path, O_WRONLY | O_TRUNC | O_CREAT, 0777);
                 }
-                cmd = realloc(cmd, (index + 1) * sizeof(char*));
-                cmd[index] = NULL;
-                if(cmd != NULL){
-                    // Final command is in here
-//                    debug("%s\n", cmd);
-                    int ret;
-                    int fds[2];
-                    int stat;
-                    pid_t pid;
-                    int buff = 0;
-//                    int prog_broken = -1;
-//                    if(prog_broken == 0){
-//
-//                    }
-                    pipe(fds);
-                    sigset_t masks, prevs;
-                    sigfillset(&masks);
-                    sigprocmask(SIG_SETMASK, &masks, &prevs);
-                    pid = fork();
-                    if(pid < 0){
-                        // kill everything
-                    }
-                    else if(pid == 0){
-                        // Entered child
-                        debug("%d", getpid());
-                        if(cmds->rest == NULL)
-                            while(dup2(fds[1], STDOUT_FILENO) == -1){}
+                if(p->output_path != NULL){
+                    strcpy(output_path, p->output_path);
+//                    debug("%s", p->output_path);
+                    f_out = open(p->output_path, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+                }
 
-                        if(buff > 0){
-                            dup2(STDIN_FILENO, fds2[0]);
+                COMMAND_LIST *cmds = p->commands;
+
+                char **cmd = NULL;// malloc(sizeof(char *));
+//                int index  = 0;
+                while(cmds->first != NULL){
+                    WORD_LIST *wlist = cmds->first->words;
+                    int index  = 0;
+                    cmd = NULL;
+                    while(wlist->first != NULL){
+                        char *temp = wlist->first;
+                        debug("%s", temp);
+                        cmd = (char**)realloc(cmd, (index + 1) * sizeof(char*));
+                        cmd[index] = temp;
+                        index++;
+                        if(wlist->rest == NULL) {
+                            break;
+                        }
+                        wlist = wlist->rest;
+                    }
+//                    debug("%s", cmd[0]);
+                    cmd = realloc(cmd, (index + 1) * sizeof(char*));
+                    cmd[index] = NULL;
+
+
+                    if(cmd != NULL){
+                        int filedesc[2];
+                        if(pipe(filedesc) == -1){
+                            exit(1);
                         }
 
-                        close(fds[0]);
-                        close(fds[1]);
-                        debug("I am executing the program %s", *cmd);
-                        sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, RUNNING);
-                        list_of_jobs[i].status = RUNNING;
+                        pid = fork();
+                        if(pid < 0){
+                            abort();
+                        }
+                        else if(pid == 0){
+                            // Entered child
+//                            debug("%d", getpid());
+                            if(cmds->rest == NULL){
+                                if(f_out != -1){
+                                    dup2(f_out, STDOUT_FILENO);
 
-                        ret = execvp(cmd[0], cmd);
-                    }
-                    else{
-                        // Entered parent
-                        setpgid(pid, getpid());
-                        sigprocmask(SIG_SETMASK, &prevs, NULL);
-                        debug("%d", pid);
-                        int status;
-                        waitpid(pid, &status, 0); // Check this
+                                }
+                            }
+                            else{
+                                dup2(filedesc[1], STDOUT_FILENO);
+                            }
+                            if(pipe_int){
+                                dup2(pipe_arr[0], STDIN_FILENO);
+                            }
+                            else if(f_in != -1){
+                                dup2(f_in, STDIN_FILENO);
+                            }
+                            if(f_in != -1)
+                                close(f_in);
+                            if(f_out != -1)
+                                close(f_out);
 
-                        close(fds2[0]);
-                        close(fds2[1]);
-                        waitpid(pid, &stat, 0);
-                        close(fds[0]);
-                        close(fds[1]);
-//                        buff = read(fds[0], cmd, 3500);
-                        pipe(fds);
-//                        write(fds[1], cmd, buff);
-                        close(fds2[0]);
-                        close(fds2[1]);
+                            close(filedesc[1]);
+                            close(filedesc[0]);
+                            close(pipe_arr[1]);
+                            close(pipe_arr[0]);
 
-                        if(ret == -1){
-                            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, ABORTED);
-                            list_of_jobs[i].status = ABORTED;
+
+                            execvp(cmd[0], cmd);
                         }
                         else{
-                            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, COMPLETED);
-                            list_of_jobs[i].status = COMPLETED;
+                            // Entered parent
+                            setpgid(pid, getpid());
+//                            debug("%d", pid);
+                            pipe_int = 1;
+                            close(pipe_arr[1]);
+                            close(pipe_arr[0]);
+                            pipe_arr[0] = filedesc[0];
+                            pipe_arr[1] = filedesc[1];
+
                         }
-//                        if(stat == 1)
-//                            prog_broken = 0;
+                        free(cmd);
+                        if(cmds->rest == NULL)
+                            break;
+                        cmds = cmds->rest;
                     }
                 }
-                if(cmds->rest == NULL)
+
+                if(plist->rest == NULL){
+                    free(input_path);
+                    free(output_path);
                     break;
-                cmds = cmds->rest;
-            }
-            free(cmd);
-//        }
-//        else{
-//            // handle it
-//        }
-            if(plist->rest == NULL){
-                free(input_path);
-                free(output_path);
-                break;
-            }
+                }
 
-            plist = plist->rest;
+                plist = plist->rest;
 
+            }
+            int status;
+            list_of_jobs[i].pgid = 1;
+            waitpid(pid, &status, 0);
+            pid_t group_pid = getpgid(getpid());
+            pid_t pid_exit = fork();
+
+            if(pid_exit == 0){
+                setpgid(getpid(), group_pid);
+                exit(status);
+            }
+            waitpid(pid_exit, NULL, 0);
+            exit(EXIT_SUCCESS);
         }
+
+    }
+    return 1;
+}
+
+int run_procs_from_index(int jobid){
+    for(int i = jobid; i < MAX_JOBS; i++){
+        if(list_of_jobs[i].task == NULL || list_of_jobs[i].status == COMPLETED || list_of_jobs[i].status == ABORTED || list_of_jobs[i].status == PAUSED || list_of_jobs[i].status == CANCELED)
+            continue;
+        pid_t start_fork = fork();
+        if(start_fork == 0){
+            if(*runners_queued >= MAX_RUNNERS){
+                sleep(10);
+            }
+            int ret = search_runner_slot();
+            if(ret == -1)
+                return -1;
+            list_of_jobs[i].pid = getpid();
+            setpgid(getpid(), getpid());
+
+            sigset_t masks, prevs;
+            sigfillset(&masks);
+            sigprocmask(SIG_SETMASK, &masks, &prevs);
+            sf_job_start(list_of_jobs[i].job_id, list_of_jobs[i].pgid);
+            sf_job_status_change(list_of_jobs[i].job_id, list_of_jobs[i].status, RUNNING);
+            list_of_jobs[i].status = RUNNING;
+            runners[ret] = getpid();
+            (*runners_queued)++;
+            sigprocmask(SIG_SETMASK, &prevs, NULL);
+
+            j = &list_of_jobs[i];
+            PIPELINE_LIST *plist = (list_of_jobs[i].task)->pipelines;
+            char* input_path = malloc(sizeof(char*));
+            char* output_path = malloc(sizeof(char*));
+            pid_t pid;
+
+            while(plist->first != NULL){
+                int pipe_arr[2];
+                pipe(pipe_arr);
+                int pipe_int = 0;
+                PIPELINE *p = plist->first;
+                int f_out = - 1;
+                int f_in = -1;
+
+                strcpy(input_path, "");
+                strcpy(output_path, "");
+
+                if(p->input_path != NULL){
+                    strcpy(input_path, p->input_path);
+//                    debug("%s", p->input_path);
+                    f_in = open(p->input_path, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+                }
+                if(p->output_path != NULL){
+                    strcpy(output_path, p->output_path);
+//                    debug("%s", p->output_path);
+                    f_out = open(p->output_path, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+                }
+
+                COMMAND_LIST *cmds = p->commands;
+
+                char **cmd = NULL;// malloc(sizeof(char *));
+//                int index  = 0;
+                while(cmds->first != NULL){
+                    WORD_LIST *wlist = cmds->first->words;
+                    int index  = 0;
+                    cmd = NULL;
+                    while(wlist->first != NULL){
+                        char *temp = wlist->first;
+                        debug("%s", temp);
+                        cmd = (char**)realloc(cmd, (index + 1) * sizeof(char*));
+                        cmd[index] = temp;
+                        index++;
+                        if(wlist->rest == NULL) {
+                            break;
+                        }
+                        wlist = wlist->rest;
+                    }
+//                    debug("%s", cmd[0]);
+                    cmd = realloc(cmd, (index + 1) * sizeof(char*));
+                    cmd[index] = NULL;
+
+
+                    if(cmd != NULL){
+                        int filedesc[2];
+                        if(pipe(filedesc) == -1){
+                            exit(1);
+                        }
+
+                        pid = fork();
+                        if(pid < 0){
+                            abort();
+                        }
+                        else if(pid == 0){
+                            // Entered child
+//                            debug("%d", getpid());
+                            if(cmds->rest == NULL){
+                                if(f_out != -1){
+                                    dup2(f_out, STDOUT_FILENO);
+
+                                }
+                            }
+                            else{
+                                dup2(filedesc[1], STDOUT_FILENO);
+                            }
+                            if(pipe_int){
+                                dup2(pipe_arr[0], STDIN_FILENO);
+                            }
+                            else if(f_in != -1){
+                                dup2(f_in, STDIN_FILENO);
+                            }
+                            if(f_in != -1)
+                                close(f_in);
+                            if(f_out != -1)
+                                close(f_out);
+
+                            close(filedesc[1]);
+                            close(filedesc[0]);
+                            close(pipe_arr[1]);
+                            close(pipe_arr[0]);
+
+
+                            execvp(cmd[0], cmd);
+                        }
+                        else{
+                            // Entered parent
+                            setpgid(pid, getpid());
+//                            debug("%d", pid);
+                            pipe_int = 1;
+                            close(pipe_arr[1]);
+                            close(pipe_arr[0]);
+                            pipe_arr[0] = filedesc[0];
+                            pipe_arr[1] = filedesc[1];
+
+                        }
+                        free(cmd);
+                        if(cmds->rest == NULL)
+                            break;
+                        cmds = cmds->rest;
+                    }
+                }
+
+                if(plist->rest == NULL){
+                    free(input_path);
+                    free(output_path);
+                    break;
+                }
+
+                plist = plist->rest;
+
+            }
+            int status;
+            list_of_jobs[i].pgid = 1;
+            waitpid(pid, &status, 0);
+            pid_t group_pid = getpgid(getpid());
+            pid_t pid_exit = fork();
+
+            if(pid_exit == 0){
+                setpgid(getpid(), group_pid);
+                exit(status);
+            }
+            waitpid(pid_exit, NULL, 0);
+            exit(EXIT_SUCCESS);
+        }
+
     }
     return 1;
 }
@@ -190,7 +423,7 @@ const char* map_status_to_str(JOB_STATUS x){
 void coalesce_job_table(){
     int i = 0;
     int k = 0;
-    while(k < jobs_queued){
+    while(k < *jobs_queued){
         if(list_of_jobs[i].job_id != -1){
             if(i < k){
                 struct job temp = list_of_jobs[i];
@@ -206,7 +439,7 @@ void coalesce_job_table(){
 void coalesce_runner_table(){
     int i = 0;
     int k = 0;
-    while(k < runners_queued){
+    while(k < *runners_queued){
         if(runners[i] != -1){
             if(i < k){
                 pid_t temp = runners[i];
@@ -265,7 +498,7 @@ char* substring(const char *input, int begin, char end){
     }
 
     newInput[k] = '\0';
-    debug("substring: %s", newInput);
+//    debug("substring: %s", newInput);
     return newInput;
 }
 
@@ -360,7 +593,6 @@ int parse(char *input){
         int res = jobs_get_enabled();
         if(res != 0){
             jobs_set_enabled(0);
-//            run_procs();
         }
         return 1;
     }
@@ -379,47 +611,67 @@ int parse(char *input){
     // debug("%s", first);
     if(mul_args == 1){
         char *first = substring(input, 0, ' ');
-        debug("%s", first);
+//        debug("%s", first);
         if(strcmp("status", first) == 0){
             int str_start = strlen(first) + 1;
             int second = (*substring(input, str_start, '\0') - '0');
             if(list_of_jobs[second].job_id != -1){
                 printf("job %d [%s]:%s\n", list_of_jobs[second].job_id, map_status_to_str(list_of_jobs[second].status), list_of_jobs->cmd);
             }
-            debug("%d", second);
+//            debug("%d", second);
             free(first);
             return 1;
         }
         else if(strcmp("spool", first) == 0){
             char *pipe = replace_char_with_no_space(strstr(input, "\'"), '\'');
-            debug("%s", pipe);
+//            debug("%s", pipe);
 
             int res = job_create(pipe);
             if(res == -1){
                 // handle it
             }
             strcpy(pipe, "");
-//        free(pipe);
+
             free(first);
             return 1;
         }
         else if(strcmp("pause", first) == 0){
-            // debug("%s", pipe);
+            int str_start = strlen(first) + 1;
+            int second = (*substring(input, str_start, '\0') - '0');
+            if(list_of_jobs[second].job_id != -1){
+                job_pause(list_of_jobs[second].job_id);
+            }
+            else{
+                printf("Unrecognized command: pause\n");
+            }
             free(first);
             return 1;
         }
         else if(strcmp("resume", first) == 0){
-            // debug("%s", pipe);
+            int str_start = strlen(first) + 1;
+            int second = (*substring(input, str_start, '\0') - '0');
+            if(list_of_jobs[second].job_id != -1){
+                job_resume(list_of_jobs[second].job_id);
+            }
+            else{
+                printf("Unrecognized command: resume\n");
+            }
             free(first);
             return 1;
         }
         else if(strcmp("cancel", first) == 0){
-            // debug("%s", pipe);
+            int str_start = strlen(first) + 1;
+            int second = (*substring(input, str_start, '\0') - '0');
+            if(list_of_jobs[second].job_id != -1){
+                job_cancel(list_of_jobs[second].job_id);
+            }
+            else{
+                printf("Unrecognized command: cancel\n");
+            }
             free(first);
             return 1;
         }
         else if(strcmp("expunge", first) == 0){
-            // debug("%s", pipe);
             int str_start = strlen(first) + 1;
             int second = (*substring(input, str_start, '\0') - '0');
             if(list_of_jobs[second].job_id != -1){
@@ -433,7 +685,5 @@ int parse(char *input){
         }
         free(first);
     }
-
-//    free(input);
     return 1;
 }
