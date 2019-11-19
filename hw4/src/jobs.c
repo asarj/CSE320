@@ -173,6 +173,7 @@ int job_pause(int jobid) {
         sigset_t m, pr;
         sigfillset(&m);
         sigprocmask(SIG_SETMASK, &m, &pr);
+        sf_job_pause(jobid, list_of_jobs[jobid].pgid);
         sf_job_status_change(jobid, list_of_jobs[jobid].status, PAUSED);
         list_of_jobs[jobid].status = PAUSED;
         sigprocmask(SIG_SETMASK, &pr, NULL);
@@ -189,6 +190,7 @@ int job_resume(int jobid) {
         sigset_t m, pr;
         sigfillset(&m);
         sigprocmask(SIG_SETMASK, &m, &pr);
+        sf_job_resume(jobid, list_of_jobs[jobid].pgid);
         sf_job_status_change(jobid, list_of_jobs[jobid].status, RUNNING);
         list_of_jobs[jobid].status = RUNNING;
         sigprocmask(SIG_SETMASK, &pr, NULL);
