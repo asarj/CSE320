@@ -8,10 +8,12 @@
 #include "server.h"
 #include "debug.h"
 #include "csapp.h"
+#include "errno.h"
 
 extern EXCHANGE *exchange;
 extern CLIENT_REGISTRY *client_registry;
 void signalHandler(int signnum);
+int errno;
 
 static void terminate(int status);
 
@@ -21,6 +23,8 @@ static void terminate(int status);
  * Usage: bourse <port>
  */
 void signalHandler(int signum){
+    debug("%d", signum);
+    debug("%d", SIGHUP);
     if(signum == SIGHUP){
         terminate(EXIT_SUCCESS);
     }
@@ -29,6 +33,8 @@ int main(int argc, char* argv[]){
     // Option processing should be performed here.
     // Option '-p <port>' is required in order to specify the port number
     // on which the server should listen.
+    pid_t pid = getpid();
+    debug("PID: %d", pid);
     char *options = ":ph";
     extern char *optarg;
     extern int optind, optopt, opterr;
@@ -47,7 +53,6 @@ int main(int argc, char* argv[]){
                     port = atoi(argv[optind]);
 
                 }
-
 //                if(port == NULL || port == '-' || port == 0){
 //                    fprintf(stderr,"Illegal syntax using -p option\n");
 //                }
@@ -70,54 +75,34 @@ int main(int argc, char* argv[]){
         if (strcmp(host, "") == 0 || host == NULL || strlen(host) == 0) {
             strcpy(host, "localhost");
         }
-
-        // Perform required initializations of the client_registry,
-        // maze, and player modules.
-        client_registry = creg_init();
-        exchange = exchange_init();
-        trader_init();
-
-        // TODO: Set up the server socket and enter a loop to accept connections
-        // on this socket.  For each connection, a thread should be started to
-        // run function brs_client_service().  In addition, you should install
-        // a SIGHUP handler, so that receipt of SIGHUP will perform a clean
-        // shutdown of the server.
-        Signal(SIGHUP, signalHandler);
-
-        int listenfd, *connfdp;
-        socklen_t clientlen;
-        struct sockaddr_storage clientaddr; pthread_t tid;
-        listenfd = Open_listenfd(strport);
-        while (1) {
-            clientlen=sizeof(struct sockaddr_storage);
-            connfdp = Malloc(sizeof(int));
-            *connfdp = Accept(listenfd, (SA *) &clientaddr, &clientlen);
-            Pthread_create(&tid, NULL, brs_client_service, connfdp);
-        }
-//
-//        while (1) {
-//        listen(sockfd, 50);
-//            int* fd = malloc(sizeof(int*));
-//            struct sockaddr *my_addr;
-//            socklen_t * length;
-//            my_addr->sa_family = AF_UNIX;
-//            strcpy(my_addr->sa_data , strport);
-//            *length = strlen(strport);
-//            *fd = Accept(clientfd, my_addr, length);
-//            if(length){}
-//            if(*fd > 0){
-//                pthread_t tid;
-//                Pthread_create(&tid, NULL, brs_client_service, fd);
-////                debug("%d", x);
-//                //Pthread_join(tid, NULL);
-//
-//            }
-//            else{
-//                free(fd);
-//            }
-
-//        }
     }
+    debug("%s", strport);
+    debug("%s", host);
+    // Perform required initializations of the client_registry,
+    // maze, and player modules.
+    client_registry = creg_init();
+    exchange = exchange_init();
+    trader_init();
+
+    // TODO: Set up the server socket and enter a loop to accept connections
+    // on this socket.  For each connection, a thread should be started to
+    // run function brs_client_service().  In addition, you should install
+    // a SIGHUP handler, so that receipt of SIGHUP will perform a clean
+    // shutdown of the server.
+    Signal(SIGHUP, signalHandler);
+
+    int listenfd, *connfdp;
+    socklen_t clientlen;
+    struct sockaddr_storage clientaddr; pthread_t tid;
+    listenfd = Open_listenfd(strport);
+    while (1) {
+        clientlen=sizeof(struct sockaddr_storage);
+        connfdp = Malloc(sizeof(int));
+        *connfdp = Accept(listenfd, (SA *) &clientaddr, &clientlen);
+        Pthread_create(&tid, NULL, brs_client_service, connfdp);
+//            close(*connfdp);
+    }
+
 
     fprintf(stderr, "You have to finish implementing main() "
 	    "before the Bourse server will function.\n");
