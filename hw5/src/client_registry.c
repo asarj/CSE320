@@ -88,6 +88,8 @@ void creg_shutdown_all(CLIENT_REGISTRY *cr){
 
     for(int i = 0; i < cr->length; i++){
         cr->used = cr->used - 1;
+        if(cr->fds[i] != 0)
+            debug("Shutting down client %d", cr->fds[i]);
         shutdown(cr->fds[i], SHUT_RD);
     }
 }
