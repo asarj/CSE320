@@ -33,8 +33,8 @@ int main(int argc, char* argv[]){
     // Option processing should be performed here.
     // Option '-p <port>' is required in order to specify the port number
     // on which the server should listen.
-    pid_t pid = getpid();
-    debug("PID: %d", pid);
+//    pid_t pid = getpid();
+//    debug("PID: %d", pid);
     char *options = ":ph";
     extern char *optarg;
     extern int optind, optopt, opterr;
