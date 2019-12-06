@@ -23,7 +23,7 @@ struct client_registry{
 CLIENT_REGISTRY *creg_init(){
     CLIENT_REGISTRY *creg = (CLIENT_REGISTRY *)malloc(sizeof(CLIENT_REGISTRY));
     debug("Initializing registry");
-    creg->fds = (int *)malloc(sizeof(int) * FD_SETSIZE - 3);
+    creg->fds = (int *)malloc(sizeof(int) * FD_SETSIZE - 4);
     creg->length = FD_SETSIZE - 4;
     creg->front = 0;
     creg->rear = 0;
@@ -36,7 +36,11 @@ CLIENT_REGISTRY *creg_init(){
 
 void creg_fini(CLIENT_REGISTRY *cr){
     debug("Clearing registry");
-    Free(cr->fds);
+    if(cr != NULL){
+        if(cr->fds != NULL)
+            Free(cr->fds);
+        Free(cr);
+    }
 }
 
 int creg_register(CLIENT_REGISTRY *cr, int fd){
@@ -60,12 +64,15 @@ int creg_register(CLIENT_REGISTRY *cr, int fd){
     debug("Register client fd %d (total connected: %d)", fd, cr->used);
 //    V(&cr->items);
 
-    return fd;
+    return 0;
 }
 
 int creg_unregister(CLIENT_REGISTRY *cr, int fd){
     if(fd < 0)
         return -1;
+    if(cr->used == 0){
+        return -1;
+    }
     int item;
 //    P(&cr->items);
     P(&cr->mutex);
@@ -74,7 +81,7 @@ int creg_unregister(CLIENT_REGISTRY *cr, int fd){
     V(&cr->mutex);
 //    V(&cr->slots);
     debug("Unregister client fd %d (total connected: %d)", fd, cr->used);
-    return item;
+    return 0;
 }
 
 void creg_wait_for_empty(CLIENT_REGISTRY *cr){

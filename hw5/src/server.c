@@ -20,18 +20,18 @@ void *brs_client_service(void *arg){
     Pthread_detach(Pthread_self());
     creg_register(creg, fd);
     while(1){
-        debug("ln22");
         BRS_PACKET_HEADER *send = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
         BRS_PACKET_HEADER *recv = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
         void *p = (void *)malloc(sizeof(char) * MAX_PAYLOAD_SIZE);
-        creg_register(creg, fd);
-        debug("Before");
+//        creg_register(creg, fd);
         if(proto_recv_packet(fd, recv, &p) < 0){
             free(send);
             free(recv);
             free(p);
+            send = NULL;
+            recv = NULL;
+            p = NULL;
         }
-        debug("Something");
         if(recv->type == BRS_LOGIN_PKT){
             logged_in = 1;
             t = trader_login(fd, (char *)p);
@@ -45,8 +45,7 @@ void *brs_client_service(void *arg){
             else{
                 send->type = BRS_NACK_PKT;
             }
-            proto_send_packet(fd, send, NULL);
-            trader_send_packet(t, send, &p);
+            trader_send_packet(t, send, NULL);
         }
         if(logged_in){
             if(t == NULL){
@@ -61,13 +60,11 @@ void *brs_client_service(void *arg){
                 clock_gettime(CLOCK_MONOTONIC, &time);
                 send->timestamp_sec = htonl(time.tv_sec);
                 send->timestamp_nsec = htonl(time.tv_nsec);
-                proto_send_packet(fd, send, NULL);
-                trader_send_packet(t, send, p);
+                trader_send_packet(t, send, NULL);
             }
 
             // All trader functions
             if(recv->type == BRS_STATUS_PKT){
-//                debug("The fd is %d", fd);
                 BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
                 exchange_get_status(exchange, &brs_info);
@@ -77,110 +74,200 @@ void *brs_client_service(void *arg){
                 newHeader->type = BRS_ACK_PKT;
                 newHeader->timestamp_sec = htonl(time.tv_sec);
                 newHeader->timestamp_nsec = htonl(time.tv_nsec);
-                newHeader->size = sizeof(brs_info);
-                newHeader->size = 0;
-                debug("The size of the header is %d", newHeader->size);
+                newHeader->size = htonl(sizeof(brs_info));
+//                newHeader->size = 0;
+//                debug("The size of the header is %d", newHeader->size);
                 proto_send_packet(fd, newHeader, &brs_info);
                 trader_send_ack(t, &brs_info);
+                free(newHeader);
             }
             else if(recv->type == BRS_DEPOSIT_PKT){
-                BRS_FUNDS_INFO *brs_funds;
-                brs_funds = (BRS_FUNDS_INFO *)p;
-                trader_increase_balance(t, brs_funds->amount);
+                BRS_FUNDS_INFO *brs_funds = (BRS_FUNDS_INFO *)p;
+                trader_increase_balance(t, ntohl(brs_funds->amount));
 
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
                 exchange_get_status(exchange, &brs_info);
+
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
-                send->type = BRS_ACK_PKT;
-                send->timestamp_sec = htonl(time.tv_sec);
-                send->timestamp_nsec = htonl(time.tv_nsec);
-                send->size = sizeof(brs_info);
-                proto_send_packet(fd, send, &brs_info);
+                newHeader->type = BRS_ACK_PKT;
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
+//                newHeader->size = 0;
+//                debug("The size of the header is %d", newHeader->size);
+//                proto_send_packet(fd, newHeader, &brs_info);
                 trader_send_ack(t, &brs_info);
-                debug("deposit ends");
+                free(newHeader);
+//                debug("deposit ends");
             }
             else if(recv->type == BRS_WITHDRAW_PKT){
                 // Check this later
-                debug("%d", *((int *)p));
-                int ret = trader_decrease_balance(t, (funds_t)*((int *)p));
+//                debug("%d", *((int *)p));
+                BRS_FUNDS_INFO *brs_funds = (BRS_FUNDS_INFO *)p;
+                int ret = trader_decrease_balance(t, ntohl(brs_funds->amount));
 
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
                 exchange_get_status(exchange, &brs_info);
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
 
-                send->timestamp_sec = htonl(time.tv_sec);
-                send->timestamp_nsec = htonl(time.tv_nsec);
-//                send->size = sizeof(brs_info);
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
 
                 if(ret == -1){
-                    send->type = BRS_NACK_PKT;
-                    send->size = 0;
-                    proto_send_packet(fd, send, NULL);
+                    newHeader->type = BRS_NACK_PKT;
+                    newHeader->size = 0;
+//                    proto_send_packet(fd, send, NULL);
                     trader_send_nack(t);
                 }
                 else{
-                    send->type = BRS_ACK_PKT;
-                    send->size = sizeof(brs_info);
-                    proto_send_packet(fd, send, &brs_info);
+                    newHeader->type = BRS_ACK_PKT;
+                    newHeader->size = htonl(sizeof(brs_info));
+//                    proto_send_packet(fd, send, &brs_info);
                     trader_send_ack(t, &brs_info);
                 }
-
+                free(newHeader);
             }
             else if(recv->type == BRS_ESCROW_PKT){
-                trader_increase_inventory(t, (funds_t)*((int *)p));
+                BRS_ESCROW_INFO *brs_escrow = (BRS_ESCROW_INFO *)p;
+                trader_increase_inventory(t, htonl(brs_escrow->quantity));
 
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
                 exchange_get_status(exchange, &brs_info);
+
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
-
-                send->timestamp_sec = htonl(time.tv_sec);
-                send->timestamp_nsec = htonl(time.tv_nsec);
-                send->size = sizeof(brs_info);
-                proto_send_packet(fd, send, &brs_info);
+                newHeader->type = BRS_ACK_PKT;
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
+//                proto_send_packet(fd, send, &brs_info);
                 trader_send_ack(t, &brs_info);
+                free(newHeader);
             }
             else if(recv->type == BRS_RELEASE_PKT){
-                int ret = trader_decrease_inventory(t, (funds_t)*((int *)p));
+                BRS_ESCROW_INFO *brs_escrow = (BRS_ESCROW_INFO *)p;
+                int ret = trader_decrease_inventory(t, htonl(brs_escrow->quantity));
 
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
                 exchange_get_status(exchange, &brs_info);
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
 
-                send->timestamp_sec = htonl(time.tv_sec);
-                send->timestamp_nsec = htonl(time.tv_nsec);
-                send->size = sizeof(brs_info);
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
 
                 if(ret == -1){
-                    send->type = BRS_NACK_PKT;
-                    proto_send_packet(fd, send, NULL);
+                    newHeader->type = BRS_NACK_PKT;
+                    newHeader->size = 0;
+//                    proto_send_packet(fd, newHeader, NULL);
                     trader_send_nack(t);
                 }
                 else{
-                    send->type = BRS_ACK_PKT;
-                    proto_send_packet(fd, send, &brs_info);
+                    newHeader->type = BRS_ACK_PKT;
+//                    proto_send_packet(fd, newHeader, &brs_info);
                     trader_send_ack(t, &brs_info);
                 }
+                free(newHeader);
             }
-//            else if(recv->type == BRS_BUY_PKT){
-//                BRS_ORDER_INFO brs_info = (BRS_ORDER_INFO)p;
-//                orderid_t id = exchange_post_buy(exhange, t, brs_info.quantity, brs_info.price);
-//
-//            }
-//            else if(recv->type == BRS_SELL_PKT){
-//                exchange_post_sell(t, )
-//            }
-//            else if(recv->type == BRS_CANCEL_PKT){
-//                exchange_cancel(exchange, t, )
-//            }
+            else if(recv->type == BRS_BUY_PKT){
+                BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
+                orderid_t id = exchange_post_buy(exchange, t, brs_order->quantity, brs_order->price);
+
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
+                BRS_STATUS_INFO brs_info;
+
+                exchange_get_status(exchange, &brs_info);
+                brs_info.orderid = id;
+
+                struct timespec time;
+                clock_gettime(CLOCK_MONOTONIC, &time);
+                newHeader->type = BRS_ACK_PKT;
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
+//                proto_send_packet(fd, send, &brs_info);
+                trader_send_ack(t, &brs_info);
+                free(newHeader);
+            }
+            else if(recv->type == BRS_SELL_PKT){
+                BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
+                orderid_t id = exchange_post_sell(exchange, t, brs_order->quantity, brs_order->price);
+
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
+                BRS_STATUS_INFO brs_info;
+
+                exchange_get_status(exchange, &brs_info);
+                brs_info.orderid = id;
+
+                struct timespec time;
+                clock_gettime(CLOCK_MONOTONIC, &time);
+//                newHeader->type = BRS_ACK_PKT;
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
+//                proto_send_packet(fd, send, &brs_info);
+//                trader_send_ack(t, &brs_info);
+                if(id == 0){
+                    newHeader->type = BRS_NACK_PKT;
+                    newHeader->size = 0;
+                    trader_send_nack(t);
+                }
+                else{
+                    newHeader->type = BRS_ACK_PKT;
+                    newHeader->size = htonl(sizeof(brs_info));
+                    trader_send_ack(t, &brs_info);
+                }
+                free(newHeader);
+            }
+            else if(recv->type == BRS_CANCEL_PKT){
+                BRS_CANCEL_INFO *brs_order = (BRS_CANCEL_INFO *)p;
+                int id = exchange_cancel(exchange, t, brs_order->order, )
+
+                BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
+                BRS_STATUS_INFO brs_info;
+                
+                exchange_get_status(exchange, &brs_info);
+                brs_info.orderid = id;
+
+                struct timespec time;
+                clock_gettime(CLOCK_MONOTONIC, &time);
+//                newHeader->type = BRS_ACK_PKT;
+                newHeader->timestamp_sec = htonl(time.tv_sec);
+                newHeader->timestamp_nsec = htonl(time.tv_nsec);
+                newHeader->size = htonl(sizeof(brs_info));
+//                proto_send_packet(fd, send, &brs_info);
+//                trader_send_ack(t, &brs_info);
+                if(id == 0){
+                    newHeader->type = BRS_NACK_PKT;
+                    newHeader->size = 0;
+                    trader_send_nack(t);
+                }
+                else{
+                    newHeader->type = BRS_ACK_PKT;
+                    newHeader->size = htonl(sizeof(brs_info));
+                    trader_send_ack(t, &brs_info);
+                }
+                free(newHeader);
+            }
         }
         free(send);
         free(recv);
         free(p);
-        debug("while ends");
+        send = NULL;
+        recv = NULL;
+        p = NULL;
+
+//        debug("while ends");
     }
+
+
     return NULL;
 }
