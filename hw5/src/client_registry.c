@@ -70,7 +70,7 @@ int creg_register(CLIENT_REGISTRY *cr, int fd){
 int creg_unregister(CLIENT_REGISTRY *cr, int fd){
     if(fd < 0)
         return -1;
-    if(cr->used == 0){
+    if(cr == NULL || cr->fds == NULL || cr->used == 0){
         return -1;
     }
     int item;
@@ -80,6 +80,9 @@ int creg_unregister(CLIENT_REGISTRY *cr, int fd){
     cr->used = cr->used - 1;
     V(&cr->mutex);
 //    V(&cr->slots);
+    if(item != 0){
+
+    }
     debug("Unregister client fd %d (total connected: %d)", fd, cr->used);
     return 0;
 }

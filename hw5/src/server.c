@@ -22,7 +22,10 @@ void *brs_client_service(void *arg){
     while(1){
         BRS_PACKET_HEADER *send = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
         BRS_PACKET_HEADER *recv = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
-        void *p = (void *)malloc(sizeof(char) * MAX_PAYLOAD_SIZE);
+        void *p;
+        if(p == NULL){
+
+        }
 //        creg_register(creg, fd);
         if(proto_recv_packet(fd, recv, &p) < 0){
             free(send);
@@ -31,6 +34,10 @@ void *brs_client_service(void *arg){
             send = NULL;
             recv = NULL;
             p = NULL;
+        }
+        if(recv == NULL){
+            creg_unregister(creg, fd);
+//            return NULL;
         }
         if(recv->type == BRS_LOGIN_PKT){
             logged_in = 1;
@@ -80,6 +87,7 @@ void *brs_client_service(void *arg){
                 proto_send_packet(fd, newHeader, &brs_info);
                 trader_send_ack(t, &brs_info);
                 free(newHeader);
+//                free(brs_info);
             }
             else if(recv->type == BRS_DEPOSIT_PKT){
                 BRS_FUNDS_INFO *brs_funds = (BRS_FUNDS_INFO *)p;
@@ -100,6 +108,7 @@ void *brs_client_service(void *arg){
 //                proto_send_packet(fd, newHeader, &brs_info);
                 trader_send_ack(t, &brs_info);
                 free(newHeader);
+                free(brs_funds);
 //                debug("deposit ends");
             }
             else if(recv->type == BRS_WITHDRAW_PKT){
@@ -131,6 +140,7 @@ void *brs_client_service(void *arg){
                     trader_send_ack(t, &brs_info);
                 }
                 free(newHeader);
+                free(brs_funds);
             }
             else if(recv->type == BRS_ESCROW_PKT){
                 BRS_ESCROW_INFO *brs_escrow = (BRS_ESCROW_INFO *)p;
@@ -149,6 +159,7 @@ void *brs_client_service(void *arg){
 //                proto_send_packet(fd, send, &brs_info);
                 trader_send_ack(t, &brs_info);
                 free(newHeader);
+                free(brs_escrow);
             }
             else if(recv->type == BRS_RELEASE_PKT){
                 BRS_ESCROW_INFO *brs_escrow = (BRS_ESCROW_INFO *)p;
@@ -176,6 +187,7 @@ void *brs_client_service(void *arg){
                     trader_send_ack(t, &brs_info);
                 }
                 free(newHeader);
+                free(brs_escrow);
             }
             else if(recv->type == BRS_BUY_PKT){
                 BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
@@ -185,7 +197,13 @@ void *brs_client_service(void *arg){
                 BRS_STATUS_INFO brs_info;
 
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = id;
+                brs_info.orderid = htonl(id);
+                brs_info.quantity = htonl(brs_info.quantity);
+                brs_info.bid = htonl(brs_info.bid);
+                brs_info.inventory = htonl(brs_info.inventory);
+                brs_info.ask = htonl(brs_info.ask);
+                brs_info.last = htonl(brs_info.last);
+                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
@@ -196,6 +214,7 @@ void *brs_client_service(void *arg){
 //                proto_send_packet(fd, send, &brs_info);
                 trader_send_ack(t, &brs_info);
                 free(newHeader);
+                free(brs_order);
             }
             else if(recv->type == BRS_SELL_PKT){
                 BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
@@ -205,7 +224,13 @@ void *brs_client_service(void *arg){
                 BRS_STATUS_INFO brs_info;
 
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = id;
+                brs_info.orderid = htonl(id);
+                brs_info.quantity = htonl(brs_info.quantity);
+                brs_info.bid = htonl(brs_info.bid);
+                brs_info.inventory = htonl(brs_info.inventory);
+                brs_info.ask = htonl(brs_info.ask);
+                brs_info.last = htonl(brs_info.last);
+                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
@@ -226,16 +251,24 @@ void *brs_client_service(void *arg){
                     trader_send_ack(t, &brs_info);
                 }
                 free(newHeader);
+                free(brs_order);
             }
             else if(recv->type == BRS_CANCEL_PKT){
+                quantity_t quantity;
                 BRS_CANCEL_INFO *brs_order = (BRS_CANCEL_INFO *)p;
-                int id = exchange_cancel(exchange, t, brs_order->order, )
+                int id = exchange_cancel(exchange, t, brs_order->order, &quantity);
 
                 BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
-                
+
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = id;
+                brs_info.orderid = htonl(id);
+                brs_info.quantity = htonl(brs_info.quantity);
+                brs_info.bid = htonl(brs_info.bid);
+                brs_info.inventory = htonl(brs_info.inventory);
+                brs_info.ask = htonl(brs_info.ask);
+                brs_info.last = htonl(brs_info.last);
+                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
@@ -256,6 +289,7 @@ void *brs_client_service(void *arg){
                     trader_send_ack(t, &brs_info);
                 }
                 free(newHeader);
+                free(brs_order);
             }
         }
         free(send);
