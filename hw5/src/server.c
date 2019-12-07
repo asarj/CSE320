@@ -36,8 +36,8 @@ void *brs_client_service(void *arg){
             p = NULL;
         }
         if(recv == NULL){
-            creg_unregister(creg, fd);
-//            return NULL;
+            trader_logout(t);
+            return NULL;
         }
         if(recv->type == BRS_LOGIN_PKT){
             logged_in = 1;
@@ -191,46 +191,56 @@ void *brs_client_service(void *arg){
             }
             else if(recv->type == BRS_BUY_PKT){
                 BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
-                orderid_t id = exchange_post_buy(exchange, t, brs_order->quantity, brs_order->price);
+                orderid_t id = exchange_post_buy(exchange, t, htonl(brs_order->quantity), htonl(brs_order->price));
 
                 BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
 
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = htonl(id);
-                brs_info.quantity = htonl(brs_info.quantity);
-                brs_info.bid = htonl(brs_info.bid);
-                brs_info.inventory = htonl(brs_info.inventory);
-                brs_info.ask = htonl(brs_info.ask);
-                brs_info.last = htonl(brs_info.last);
-                brs_info.balance = htonl(brs_info.balance);
+//                brs_info.orderid = htonl(id);
+//                brs_info.quantity = htonl(brs_info.quantity);
+//                brs_info.bid = htonl(brs_info.bid);
+//                brs_info.inventory = htonl(brs_info.inventory);
+//                brs_info.ask = htonl(brs_info.ask);
+//                brs_info.last = htonl(brs_info.last);
+//                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
-                newHeader->type = BRS_ACK_PKT;
+
                 newHeader->timestamp_sec = htonl(time.tv_sec);
                 newHeader->timestamp_nsec = htonl(time.tv_nsec);
                 newHeader->size = htonl(sizeof(brs_info));
 //                proto_send_packet(fd, send, &brs_info);
+                if(id == 0){
+                    newHeader->type = BRS_NACK_PKT;
+                    newHeader->size = 0;
+                    trader_send_nack(t);
+                }
+                else{
+                    newHeader->type = BRS_ACK_PKT;
+                    newHeader->size = htonl(sizeof(brs_info));
+                    trader_send_ack(t, &brs_info);
+                }
                 trader_send_ack(t, &brs_info);
                 free(newHeader);
                 free(brs_order);
             }
             else if(recv->type == BRS_SELL_PKT){
                 BRS_ORDER_INFO *brs_order = (BRS_ORDER_INFO *)p;
-                orderid_t id = exchange_post_sell(exchange, t, brs_order->quantity, brs_order->price);
+                orderid_t id = exchange_post_sell(exchange, t, htonl(brs_order->quantity), htonl(brs_order->price));
 
                 BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
 
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = htonl(id);
-                brs_info.quantity = htonl(brs_info.quantity);
-                brs_info.bid = htonl(brs_info.bid);
-                brs_info.inventory = htonl(brs_info.inventory);
-                brs_info.ask = htonl(brs_info.ask);
-                brs_info.last = htonl(brs_info.last);
-                brs_info.balance = htonl(brs_info.balance);
+//                brs_info.orderid = htonl(id);
+//                brs_info.quantity = htonl(brs_info.quantity);
+//                brs_info.bid = htonl(brs_info.bid);
+//                brs_info.inventory = htonl(brs_info.inventory);
+//                brs_info.ask = htonl(brs_info.ask);
+//                brs_info.last = htonl(brs_info.last);
+//                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
@@ -256,19 +266,19 @@ void *brs_client_service(void *arg){
             else if(recv->type == BRS_CANCEL_PKT){
                 quantity_t quantity;
                 BRS_CANCEL_INFO *brs_order = (BRS_CANCEL_INFO *)p;
-                int id = exchange_cancel(exchange, t, brs_order->order, &quantity);
+                int id = exchange_cancel(exchange, t, htonl(brs_order->order), &quantity);
 
                 BRS_PACKET_HEADER *newHeader = (BRS_PACKET_HEADER *)malloc(sizeof(BRS_PACKET_HEADER));
                 BRS_STATUS_INFO brs_info;
 
                 exchange_get_status(exchange, &brs_info);
-                brs_info.orderid = htonl(id);
+//                brs_info.orderid = htonl(id);
                 brs_info.quantity = htonl(brs_info.quantity);
-                brs_info.bid = htonl(brs_info.bid);
-                brs_info.inventory = htonl(brs_info.inventory);
-                brs_info.ask = htonl(brs_info.ask);
-                brs_info.last = htonl(brs_info.last);
-                brs_info.balance = htonl(brs_info.balance);
+//                brs_info.bid = htonl(brs_info.bid);
+//                brs_info.inventory = htonl(brs_info.inventory);
+//                brs_info.ask = htonl(brs_info.ask);
+//                brs_info.last = htonl(brs_info.last);
+//                brs_info.balance = htonl(brs_info.balance);
 
                 struct timespec time;
                 clock_gettime(CLOCK_MONOTONIC, &time);
@@ -278,7 +288,7 @@ void *brs_client_service(void *arg){
                 newHeader->size = htonl(sizeof(brs_info));
 //                proto_send_packet(fd, send, &brs_info);
 //                trader_send_ack(t, &brs_info);
-                if(id == 0){
+                if(id == -1){
                     newHeader->type = BRS_NACK_PKT;
                     newHeader->size = 0;
                     trader_send_nack(t);
