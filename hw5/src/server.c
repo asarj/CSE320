@@ -37,7 +37,7 @@ void *brs_client_service(void *arg){
         }
         if(recv == NULL){
             trader_logout(t);
-            return NULL;
+            break;
         }
         if(recv->type == BRS_LOGIN_PKT){
             logged_in = 1;
