@@ -30,7 +30,7 @@ shared and an academic dishonesty case will be filed against me.
 I understand that code fragments can be extremely similar even if they are
 formatted differently and use different identifiers/labels/variables. The
 appearance of extremely similar code fragments that differ in this way will be
-regarded as evidence of an attempt to conceal that sharing has taken place.
+regarded as evidence of an attempt to conceal that sharing has taken place.  
 
 When in doubt about whether or not I am permitted to use particular source
 materials, I will obtain written permission from the Professor(s), in advance of
